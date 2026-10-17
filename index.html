@@ -252,6 +252,24 @@ const topPct=r=>Math.max(.01,100*Math.pow(1-r/1000,1.6)).toFixed(1);
 const BACKSUB=new Set(['lats','upperback','lowerback']);
 const musList=(e,m)=>BACKSUB.has(m)?(e.sub||[]):e.m;
 function muscleRating(m){return muscleBest(m)[1]}
+/* ================= rank guide: what each god rank takes, at your bodyweight ================= */
+const GUIDE_EX=['barbell-bench-press','back-squat','deadlift','overhead-press','barbell-row','pull-up','barbell-curl','chest-dip','push-up'];
+function rankGuide(){const ids=GUIDE_EX.filter(id=>EXI[id]),id=ids.includes(S._gx)?S._gx:ids[0],e=EXI[id],u=U(),mine=S.lifts[id],myR=mine?rankFor(mine.rating):null;
+  const span=r=>(r.hi-r.lo+1)/3,start=(r,d)=>Math.max(1,Math.ceil(r.lo+d*span(r)));
+  // what it takes to reach a rating: weight at 1 and 5 reps for lifts, reps for bodyweight moves
+  const need=(R,reps)=>{const v=needFor(e,R,reps,u);return e.type==='w'?Math.max(5,Math.ceil(v/5)*5):Math.max(1,Math.ceil(v))};
+  const fmt=R=>e.type==='w'?`<b>${need(R,1)} lb</b> × 1 <span class="dim">·</span> <b>${need(R,5)} lb</b> × 5`:e.type==='time'?`<b>${need(R)}s</b>`:`<b>${need(R)}</b> reps`;
+  return `<div class="card" style="margin-bottom:12px"><div class="h3">How ranks work</div>
+     <p class="muted" style="font-size:13px;line-height:1.5;margin-top:6px">Every lift gets a rating from 1 to 1000, based on the weight, your reps and your bodyweight (${u.bw} lb). Each god rank has three divisions, I, II and III. A muscle's rank is your best lift for it. Your overall rank is the average of all your ranked lifts.</p></div>
+   <div class="chips" style="margin:0 0 12px;flex-wrap:wrap">${ids.map(x=>`<button class="chip ${x===id?'on':''}" onclick="S._gx='${x}';render()">${EXI[x].n}</button>`).join('')}</div>
+   <p class="dim" style="font-size:12px;margin:0 2px 10px">What it takes to reach each rank on <b>${e.n}</b> at ${u.bw} lb bodyweight.${e.eq==='wb'?' Weight is added on top of your bodyweight.':''}</p>
+   ${[...RANKS].reverse().map(r=>{const here=myR&&myR.rank===r;
+     return `<div class="card" style="margin-bottom:10px;${here?`border-color:${r.hex};box-shadow:0 0 0 1px ${r.hex}55 inset`:''}">
+      <div class="row" style="gap:14px;align-items:center"><div style="width:72px;height:72px;flex:none;display:grid;place-items:center;overflow:hidden;border-radius:16px">${fx(r,60)}</div>
+       <div style="flex:1;min-width:0"><div class="between"><b style="font-size:17px;color:${r.hex}">${r.name}</b><span class="jp dim" style="font-size:13px">${r.jp}</span></div>
+        <div class="muted" style="font-size:12px;margin-top:2px">${r.desc}</div>
+        <div class="dim" style="font-size:11px;margin-top:4px">Rating ${r.lo}–${r.hi} · seat ${r.seat} of 7${here?` · <b style="color:${r.hex}">You're here (${myR.div})</b>`:''}</div></div></div>
+      <div style="margin-top:10px;display:grid;gap:6px">${['I','II','III'].map((d,i)=>`<div class="between" style="font-size:13px;background:var(--card2);border-radius:10px;padding:8px 12px"><span class="muted">${r.name.replace(' God','')} ${d}</span><span>${fmt(start(r,i))}</span></div>`).join('')}</div></div>`}).join('')}`}
 // every exercise that works any of these muscles
 const musExercises=ms=>EXL.filter(e=>ms.some(m=>musList(e,m).includes(m)));
 // sheet: all exercises for one muscle, ranked ones first (best rank on top), then main movers, then helpers
@@ -774,13 +792,14 @@ function ranksView(){
        <div class="between" style="background:var(--card2);border-radius:12px;padding:6px 8px"><button onclick="S._reg='${regs[(regs.indexOf(reg)+regs.length-1)%regs.length]}';render()">${I('left',16)}</button><b style="text-transform:capitalize">${reg}</b><button onclick="S._reg='${regs[(regs.indexOf(reg)+1)%regs.length]}';render()">${I('right',16)}</button></div>
        <div class="legend" style="justify-content:flex-start;margin-top:10px">${counts.filter(c=>c[1]).map(([rk,n])=>`<span><i style="background:${rk.hex}"></i>${rk.name.replace(' God','')} ${n}</span>`).join('')}</div></div></div></div>`;
   }
+  if(sub==='guide')b=rankGuide();
   if(sub==='seven'){const era=S._era||'k418',rows=seats(era);
     b=`<div class="seg" style="margin-bottom:6px">${[['k418','Year K418'],['k430','Year K430']].map(([k,l])=>`<button class="${era===k?'on':''}" onclick="S._era='${k}';render()">${l}</button>`).join('')}</div>${monument(rows)}
      <div class="eyebrow" style="margin:4px 0 6px">Upper ranks</div>${rows.slice(0,4).map((r,i)=>seatRow(r,i)).join('')}
      <div class="eyebrow" style="margin:12px 0 6px">Lower ranks · challengeable</div>${rows.slice(4).map((r,i)=>seatRow(r,i+4)).join('')}
      <p class="dim" style="font-size:12px;margin-top:8px">Your best lift rating: <b style="color:#fff">${bestRating()}</b>. Beat a lower seat's rating to challenge it.</p>`}
   return `<div class="top"><div><div class="eyebrow">Seven Great Powers</div><div class="h2">Ranks</div></div>${rf?`<span class="row" style="gap:6px">${fx(rf.rank,36)}<b style="color:${rf.rank.hex};font-size:13px">${rf.rank.name.replace(' God','')} ${rf.div}</b></span>`:''}</div>
-   <div style="padding:0 18px 12px"><div class="chips" id="rchips">${[['rank','Your Rank'],['body','Bodygraph'],['leagues','Leagues'],['gallery','Gallery'],['calc','Calculator'],['analysis','Analysis'],['seven','Seven Powers']].map(([k,l])=>`<button class="chip ${sub===k?'on':''}" onclick="S._sub='${k}';render()">${l}</button>`).join('')}</div></div>
+   <div style="padding:0 18px 12px"><div class="chips" id="rchips">${[['rank','Your Rank'],['guide','Rank Guide'],['body','Bodygraph'],['leagues','Leagues'],['gallery','Gallery'],['calc','Calculator'],['analysis','Analysis'],['seven','Seven Powers']].map(([k,l])=>`<button class="chip ${sub===k?'on':''}" onclick="S._sub='${k}';render()">${l}</button>`).join('')}</div></div>
    <div class="body">${b}</div>`;
 }
 

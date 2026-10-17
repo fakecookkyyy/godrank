@@ -18,6 +18,7 @@ function needFor(ex,R,reps,u){
   if(ex.type!=='w')return Math.ceil(stdOf(ex,u)*Math.pow(R/860,1/1.1));
   const e1=stdOf(ex,u)*u.bw*Math.pow(R/860,1/1.3);let w=e1/(1+reps/30);if(ex.eq==='wb')w-=u.bw;return Math.max(0,w);
 }
+window.needFor=needFor;
 const round5=w=>Math.max(5,Math.round(w/5)*5);
 // next-division target for an exercise at a given rep count
 window.rankHint=function(ex,rating,reps,u){
