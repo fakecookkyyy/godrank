@@ -250,6 +250,21 @@ const topPct=r=>Math.max(.01,100*Math.pow(1-r/1000,1.6)).toFixed(1);
 const BACKSUB=new Set(['lats','upperback','lowerback']);
 const musList=(e,m)=>BACKSUB.has(m)?(e.sub||[]):e.m;
 function muscleRating(m){return muscleBest(m)[1]}
+// every exercise that works any of these muscles
+const musExercises=ms=>EXL.filter(e=>ms.some(m=>musList(e,m).includes(m)));
+// sheet: all exercises for one muscle, ranked ones first (best rank on top), then main movers, then helpers
+function musRank(m,f){S._mf=f||S._mf||'all';const flt=S._mf;
+  const all=EXL.filter(e=>musList(e,m).includes(m)).map(e=>{const l=S.lifts[e.id],role=musList(e,m).indexOf(m)===0?0:1;return {e,l,role}});
+  all.sort((a,b)=>(b.l?b.l.rating:-1)-(a.l?a.l.rating:-1)||a.role-b.role||(b.e.staple-a.e.staple)||a.e.n.localeCompare(b.e.n));
+  const nr=all.filter(x=>x.l).length,list=flt==='ranked'?all.filter(x=>x.l):flt==='main'?all.filter(x=>x.role===0):all;
+  const [,r]=muscleBest(m),k=r?rankFor(r):null;
+  const chip=(v,l)=>`<button class="pill" style="${flt===v?'background:var(--text);color:#000':''}" onclick="musRank('${m}','${v}')">${l}</button>`;
+  sheet(`<div class="between"><div><div class="eyebrow">Muscle ranking</div><div class="h2" style="margin-top:2px">${MUSCLE_NAMES[m]}</div>
+      <div class="muted" style="font-size:13px;margin-top:2px">${nr} of ${all.length} exercises ranked</div></div>${k?`<div style="text-align:center">${fx(k.rank,52)}<div style="font-weight:800;font-size:11px;color:${k.rank.hex}">${k.rank.name.toUpperCase()} ${k.div}</div></div>`:''}</div>
+    <div class="row" style="gap:6px;margin:12px 0 6px">${chip('all','All '+all.length)}${chip('main','Main movers '+all.filter(x=>!x.role).length)}${chip('ranked','Ranked '+nr)}</div>
+    ${list.length?list.map(({e,l,role})=>{const q=l&&rankFor(l.rating);return `<button class="ex" style="width:100%" onclick="exSheet('${e.id}')">${thumb(e,44)}<span class="t" style="flex:1;min-width:0;text-align:left"><b>${e.n}</b><small>${role?'Helps':'Main mover'} · ${e.eqName}${l?` · ${l.w?l.w+' lb × '+l.r:l.r+(e.type==='time'?'s':' reps')}`:''}</small></span>
+      ${q?`<span class="row" style="gap:6px">${fx(q.rank,30)}<span style="font-weight:800;font-size:11px;color:${q.rank.hex};text-align:right">${q.rank.name.replace(' God','').toUpperCase()}<br>${q.div}</span></span>`:`<span class="muted" style="font-size:11px;font-weight:700">Unranked</span>`}</button>`}).join('')
+      :`<p class="muted" style="margin:16px 0">No ranked exercises yet. Log one in the Calculator.</p>`}`)}
 // best lift for a muscle: [exercise id, rating] (secondary muscles count at 85%)
 function muscleBest(m){let b=0,best=null;for(const [id,l] of Object.entries(S.lifts)){const e=EXI[id];if(!e)continue;const i=musList(e,m).indexOf(m);
   const r=i===0?l.rating:i>0?Math.round(l.rating*.85):0;if(r>b){b=r;best=id}}return [best,b]}
@@ -723,9 +738,9 @@ function ranksView(){
   }
   if(sub==='body'){const open=S._mg;b=`<div class="card" style="padding:10px 6px">${bodygraph({colorOf:muscleColor,onTap:"bgTap(event)"})}<div class="legend">${RANKS.map(r=>`<span><i style="background:${r.hex}"></i>${r.name.replace(' God','')}</span>`).join('')}</div></div>
     <div class="h3" style="margin:6px 2px 8px">Muscle rankings</div>
-    ${MGROUPS.map(([g,ms])=>{const done=ms.filter(m=>muscleRating(m)).length;return `<div class="card" style="padding:12px 14px;margin-bottom:8px"><button class="between" style="width:100%" onclick="S._mg=S._mg==='${g}'?null:'${g}';render()"><span><b style="font-size:16px">${g}</b><div class="muted" style="font-size:12px">${done}/${ms.length} complete</div></span>${I(open===g?'left':'right',18)}</button>
+    ${MGROUPS.map(([g,ms])=>{const done=ms.filter(m=>muscleRating(m)).length;return `<div class="card" style="padding:12px 14px;margin-bottom:8px"><button class="between" style="width:100%" onclick="S._mg=S._mg==='${g}'?null:'${g}';render()"><span><b style="font-size:16px">${g}</b><div class="muted" style="font-size:12px">${done}/${ms.length} muscles ranked · ${musExercises(ms).length} exercises</div></span>${I(open===g?'left':'right',18)}</button>
       ${open===g?ms.map(m=>{const [bid,r]=muscleBest(m),k=r?rankFor(r):null,bl=bid&&S.lifts[bid],sg=!k&&musSuggest(m);
-        return `<div class="between" style="margin-top:10px"${bid?` onclick="exSheet('${bid}')"`:''}><span class="row" style="gap:10px">${k?fx(k.rank,36):`<span class="ibtn" style="width:36px;height:36px">${I('dumbbell',15)}</span>`}<span><b>${MUSCLE_NAMES[m]}</b><div class="muted" style="font-size:12px">${bid?`${EXI[bid].n} · ${bl.w?bl.w+' lb × ':''}${bl.r}${EXI[bid].type==='time'?'s':bl.w?'':' reps'}`:sg?`Log ${sg} to rank`:''}</div></span></span><span style="font-weight:800;font-size:12px;color:${k?k.rank.hex:'var(--dim)'}">${k?k.rank.name.toUpperCase()+' '+k.div:'Unranked'}</span></div>`}).join(''):''}</div>`}).join('')}`}
+        return `<div class="between" style="margin-top:10px;cursor:pointer" onclick="musRank('${m}')"><span class="row" style="gap:10px">${k?fx(k.rank,36):`<span class="ibtn" style="width:36px;height:36px">${I('dumbbell',15)}</span>`}<span><b>${MUSCLE_NAMES[m]}</b><div class="muted" style="font-size:12px">${bid?`${EXI[bid].n} · ${bl.w?bl.w+' lb × ':''}${bl.r}${EXI[bid].type==='time'?'s':bl.w?'':' reps'}`:sg?`Log ${sg} to rank`:''}</div></span></span><span class="row" style="gap:6px"><span style="font-weight:800;font-size:12px;color:${k?k.rank.hex:'var(--dim)'}">${k?k.rank.name.toUpperCase()+' '+k.div:'Unranked'}</span>${I('right',14)}</span></div>`}).join(''):''}</div>`}).join('')}`}
   if(sub==='leagues'){
     if(nRanked<PLACE)b=`<div class="card" style="border-color:color-mix(in srgb,var(--accent) 50%,transparent)"><div class="h2">Unlock rank leagues</div><p class="muted" style="margin:4px 0 14px">Rank ${PLACE-nRanked} more exercises to join a league.</p>${placementsHex()}<button class="btn" style="margin-top:14px" onclick="S._sub='calc';render()">Rank exercises</button></div>`;
     else{const me=o,names=['Paul','Zenith','Eris','Ruijerd','Sylphie','Roxy','Ghislaine','Norn','Cliff','Zanoba'];const rows=names.map((n,i)=>({n,p:Math.max(0,Math.round(me+150-i*32+((n.length*37)%25)))}));rows.push({n:(S.name||'You')+' (you)',p:me,me:1});rows.sort((a,b)=>b.p-a.p);
