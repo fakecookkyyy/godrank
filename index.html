@@ -196,6 +196,7 @@ svg.i{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.8;stro
 <script src="godfx.js"></script>
 <script src="anatomy-shapes.js"></script>
 <script src="anatomy.js"></script>
+<script src="bodygraph.js"></script>
 <script src="exercises.js"></script>
 <script src="illustrations.js"></script>
 <script src="planner.js"></script>
@@ -249,6 +250,8 @@ const topPct=r=>Math.max(.01,100*Math.pow(1-r/1000,1.6)).toFixed(1);
 function muscleRating(m){let b=0;for(const [id,l] of Object.entries(S.lifts)){const e=EXI[id];if(!e)continue;const i=e.m.indexOf(m);if(i===0)b=Math.max(b,l.rating);else if(i>0)b=Math.max(b,Math.round(l.rating*.85))}return b}
 function bodyStrength(){return MUSCLES.reduce((a,m)=>a+muscleRating(m)/1000,0)/MUSCLES.length}
 const muscleColor=m=>{const r=muscleRating(m);return r?rankFor(r).rank.hex:null};
+// tap a muscle on the Bodygraph -> open its group in Ranks > Bodygraph
+function bgTap(ev,home){const m=bodygraphHit(ev);if(!m)return;const g=MGROUPS.find(([,ms])=>ms.includes(m));if(!g)return;if(home){S.tab='ranks';S._sub='body'}S._mg=g[0];render()}
 // a training day = any day with a finished workout or a logged set (e.g. home sets saved from the calculator)
 function wDays(){return [...new Set([...S.sessions.map(s=>sod(s.t)),...S.history.map(h=>sod(h.t))])].sort((a,b)=>a-b)}
 function curStreak(){const d=new Set(wDays());let t=sod(Date.now());if(!d.has(t))t=addDays(t,-1);let n=0;
@@ -373,7 +376,7 @@ function homeView(){
      <button class="row" onclick="S.tab='ranks';render()" style="gap:8px">${rf?fx(rf.rank,40):''}<div style="text-align:right"><div class="eyebrow" style="font-size:9.5px">Overall</div><div style="font-weight:800;font-size:13px;color:${rf?rf.rank.hex:'var(--muted)'}">${rf?rf.rank.name+' '+rf.div:'Unranked'}</div></div></button></div></div>
    <div class="body">
     <div class="card" style="padding:12px 6px 14px;background:radial-gradient(80% 60% at 50% 40%,#16131f,#0b0a10)">
-      ${anatomy({colorOf:muscleColor,glow,height:300})}
+      ${bodygraph({colorOf:muscleColor,glow,onTap:"bgTap(event,1)"})}
       <div class="legend" style="margin-top:6px">${RANKS.map(r=>`<span><i style="background:${r.hex}"></i>${r.name.replace(' God','')}</span>`).join('')}</div></div>
     ${doneToday?`<div class="card"><div class="between"><div><div class="eyebrow">Today</div><div class="h2" style="margin-top:2px">${DAYNAME[doneToday.type]||'Workout'} complete</div></div><span style="color:var(--good)">${I('check',28)}</span></div><p class="muted" style="margin-top:6px;font-size:13px">${doneToday.items.reduce((a,i)=>a+i.sets.length,0)} sets · +${doneToday.xp} XP${doneToday.ups?` · ${doneToday.ups} rank-ups`:''}</p></div>`
      :p?`<div class="card"><div class="between"><div><div class="eyebrow">Today · ${WD[new Date().getDay()]}</div><div class="h2" style="margin-top:2px">${DAYNAME[p.type]}</div></div><span class="pill">${p.items.length} exercises · ${p.items.reduce((a,b)=>a+b.sets,0)} sets</span></div>
@@ -711,7 +714,7 @@ function ranksView(){
      <div class="card"><div class="h3" style="margin-bottom:8px">Rank over time</div>${rankChart(rankSeries())}</div>
      ${ranked.length?`<div class="h3" style="margin:6px 2px 8px">Ranked exercises</div>`:''}${ranked.map(([id,l])=>{const e=EXI[id],r=rankFor(l.rating);return `<button class="ex" onclick="exSheet('${id}')">${fx(r.rank,44)}<span class="t"><b>${e.n}</b><small class="num">${l.w?l.w+' lb × ':''}${l.r} · rating ${l.rating}</small></span><span style="font-weight:800;font-size:12px;color:${r.rank.hex};text-align:right">${r.rank.name.replace(' God','').toUpperCase()}<br>${r.div}</span></button>`}).join('')}`;
   }
-  if(sub==='body'){const open=S._mg;b=`<div class="card" style="padding:10px 6px">${anatomy({colorOf:muscleColor,height:310})}<div class="legend">${RANKS.map(r=>`<span><i style="background:${r.hex}"></i>${r.name.replace(' God','')}</span>`).join('')}</div></div>
+  if(sub==='body'){const open=S._mg;b=`<div class="card" style="padding:10px 6px">${bodygraph({colorOf:muscleColor,onTap:"bgTap(event)"})}<div class="legend">${RANKS.map(r=>`<span><i style="background:${r.hex}"></i>${r.name.replace(' God','')}</span>`).join('')}</div></div>
     <div class="h3" style="margin:6px 2px 8px">Muscle rankings</div>
     ${MGROUPS.map(([g,ms])=>{const done=ms.filter(m=>muscleRating(m)).length;return `<div class="card" style="padding:12px 14px;margin-bottom:8px"><button class="between" style="width:100%" onclick="S._mg=S._mg==='${g}'?null:'${g}';render()"><span><b style="font-size:16px">${g}</b><div class="muted" style="font-size:12px">${done}/${ms.length} complete</div></span>${I(open===g?'left':'right',18)}</button>
       ${open===g?ms.map(m=>{const r=muscleRating(m),k=r?rankFor(r):null;return `<div class="between" style="margin-top:10px"><span class="row" style="gap:10px">${k?fx(k.rank,36):`<span class="ibtn" style="width:36px;height:36px">${I('dumbbell',15)}</span>`}<b>${MUSCLE_NAMES[m]}</b></span><span style="font-weight:800;font-size:12px;color:${k?k.rank.hex:'var(--dim)'}">${k?k.rank.name.toUpperCase()+' '+k.div:'Unranked'}</span></div>`}).join(''):''}</div>`}).join('')}`}
