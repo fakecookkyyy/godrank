@@ -1,0 +1,44 @@
+name: Workout reminders
+on:
+  schedule:
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
+    inputs:
+      kind:
+        description: 'Send now: test, gym or evening'
+        default: test
+concurrency: reminders
+jobs:
+  remind:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      GODRANK_PUSH: ${{ secrets.GODRANK_PUSH }}
+      VAPID_PRIVATE: ${{ secrets.VAPID_PRIVATE }}
+      KIND: ${{ github.event.inputs.kind }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: scripts
+      - id: plan
+        run: node scripts/push.mjs plan
+      - if: steps.plan.outputs.due != ''
+        uses: actions/cache/restore@v4
+        with:
+          path: .sent
+          key: sent-${{ steps.plan.outputs.date }}-x
+          restore-keys: sent-${{ steps.plan.outputs.date }}-
+      - if: steps.plan.outputs.due != ''
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - if: steps.plan.outputs.due != ''
+        run: npm i --no-save --no-audit --no-fund web-push@3.6.7
+      - id: send
+        if: steps.plan.outputs.due != ''
+        run: node scripts/push.mjs send
+      - if: always() && steps.send.outputs.sent == 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: .sent
+          key: sent-${{ steps.plan.outputs.date }}-${{ github.run_id }}
