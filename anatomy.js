@@ -66,7 +66,7 @@ window.anatomy=function({colorOf=()=>null,glow=new Set(),view='both',height=360,
       const rk=col&&(window.RANKS||[]).find(r=>r.hex===col);
       if(col)col=vivid(col);const dk=col&&shade(col,.5);
       if(rk){const cid=`${id}c${prefix[0]}${k}`;
-        return `<clipPath id="${cid}"><path d="${d}" clip-rule="evenodd"/></clipPath><image href="assets/ranks/${rk.id}.jpg" x="0" y="0" width="1712" height="1152" clip-path="url(#${cid})"/><path d="${d}" fill="none" stroke="#05040a" stroke-width="2.5" stroke-opacity=".55" stroke-linejoin="round"/>`+
+        return `<clipPath id="${cid}"><path d="${d}" clip-rule="evenodd"/></clipPath><image href="assets/ranks/${rk.id}.jpg" x="0" y="0" width="1712" height="1152" clip-path="url(#${cid})"/><path d="${d}" fill="none" stroke="#05040a" stroke-width="1.5" stroke-opacity=".35" stroke-linejoin="round"/>`+
           (gl?glowEl(d):'')}
       return (col?`<path d="${d}" fill-rule="evenodd" fill="${col}" fill-opacity=".8"/><path d="${d}" fill-rule="evenodd" fill="${col}" fill-opacity=".45" style="mix-blend-mode:multiply"/><path d="${d}" fill="none" stroke="${dk}" stroke-width="2.5" stroke-opacity=".85" stroke-linejoin="round"/>`:'')+
         (gl?glowEl(d):'');}).join('');
