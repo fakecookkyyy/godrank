@@ -62,7 +62,7 @@ window.anatomy=function({colorOf=()=>null,glow=new Set(),view='both',height=360,
       // the cut-out shape covers both sides at once; fall back to the traced polygon
       let d=SH[prefix+k];if(d){if(done.has(k))return '';done.add(k)}else d=toD(p);
       if(col)col=vivid(col);const dk=col&&shade(col,.5);
-      return (col?`<path d="${d}" fill-rule="evenodd" fill="${col}" fill-opacity=".62"/><path d="${d}" fill-rule="evenodd" fill="${col}" fill-opacity=".55" style="mix-blend-mode:multiply"/><path d="${d}" fill="none" stroke="${dk}" stroke-width="3" stroke-opacity=".9" stroke-linejoin="round"/>`:'')+
+      return (col?`<path d="${d}" fill-rule="evenodd" fill="${col}" fill-opacity=".8"/><path d="${d}" fill-rule="evenodd" fill="${col}" fill-opacity=".45" style="mix-blend-mode:multiply"/><path d="${d}" fill="none" stroke="${dk}" stroke-width="2.5" stroke-opacity=".85" stroke-linejoin="round"/>`:'')+
         (gl?`<path d="${d}" fill-rule="evenodd" fill="#7cc4ff" fill-opacity=".18" stroke="#7cc4ff" stroke-width="7" filter="url(#${id}g)"><animate attributeName="opacity" values=".35;1;.35" dur="1.8s" repeatCount="indefinite"/></path><path d="${d}" fill-rule="evenodd" fill="none" stroke="#bfe4ff" stroke-width="2.5" stroke-opacity=".9"/>`:'');}).join('');
   };
   return `<svg viewBox="${vb}" height="${height}" style="display:block;margin:0 auto;max-width:100%" aria-label="Muscle map">
