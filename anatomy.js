@@ -51,10 +51,13 @@ window.anatomy=function({colorOf=()=>null,glow=new Set(),view='both',height=360,
   const vb=fb?fb.vb:view==='front'?'290 10 450 1110':view==='back'?'955 10 450 1110':'280 10 1150 1110';
   const region=(fig,prefix)=>{
     const sel={};for(const [g,list] of Object.entries(GROUP))for(const r of list)if(r.startsWith(prefix))(sel[r.slice(2)]||=[]).push(g);
+    const SH=window.MUSCLE_SHAPES||{},done=new Set();
     return fig.map(([k,p])=>{const gs=sel[k]||[];const g=gs[0];const col=g&&colorOf(g);const gl=g&&glow.has(g);
-      if(!col&&!gl)return '';const d=toD(p);
-      return (col?`<path d="${d}" fill="${col}" fill-opacity=".78" style="mix-blend-mode:multiply"/><path d="${d}" fill="${col}" fill-opacity=".22"/>`:'')+
-        (gl?`<path d="${d}" fill="#7cc4ff" fill-opacity=".18" stroke="#7cc4ff" stroke-width="7" filter="url(#${id}g)"><animate attributeName="opacity" values=".35;1;.35" dur="1.8s" repeatCount="indefinite"/></path><path d="${d}" fill="none" stroke="#bfe4ff" stroke-width="2.5" stroke-opacity=".9"/>`:'');}).join('');
+      if(!col&&!gl)return '';
+      // the cut-out shape covers both sides at once; fall back to the traced polygon
+      let d=SH[prefix+k];if(d){if(done.has(k))return '';done.add(k)}else d=toD(p);
+      return (col?`<path d="${d}" fill-rule="evenodd" fill="${col}" fill-opacity=".78" style="mix-blend-mode:multiply"/><path d="${d}" fill-rule="evenodd" fill="${col}" fill-opacity=".22"/>`:'')+
+        (gl?`<path d="${d}" fill-rule="evenodd" fill="#7cc4ff" fill-opacity=".18" stroke="#7cc4ff" stroke-width="7" filter="url(#${id}g)"><animate attributeName="opacity" values=".35;1;.35" dur="1.8s" repeatCount="indefinite"/></path><path d="${d}" fill-rule="evenodd" fill="none" stroke="#bfe4ff" stroke-width="2.5" stroke-opacity=".9"/>`:'');}).join('');
   };
   return `<svg viewBox="${vb}" height="${height}" style="display:block;margin:0 auto;max-width:100%" aria-label="Muscle map">
    <defs><filter id="${id}g" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="5"/></filter>
