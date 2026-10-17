@@ -38,9 +38,8 @@ window.bodygraphHit=function(ev){if(!src)return null;const cv=ev.currentTarget,r
 // colorOf(muscle) -> rank hex or null (unranked = grey); glow: muscles to pulse (today's workout)
 window.bodygraph=function({colorOf=()=>null,glow=new Set(),onTap=''}={}){
   const cols={};MUS.forEach(m=>cols[m]=colorOf(m)||null);const k=key(cols,glow);
-  const fxs=()=>window.BodyFX&&BodyFX.start(src,k,MUS.map(m=>cols[m]));
-  setTimeout(()=>{if(cache.has(k)){fill();return fxs()}load().then(()=>{if(!cache.has(k)){if(cache.size>6)cache.delete(cache.keys().next().value);cache.set(k,paint(cols,glow))}fill();fxs()}).catch(()=>{})},0);
+  setTimeout(()=>{if(cache.has(k))return fill();load().then(()=>{if(!cache.has(k)){if(cache.size>6)cache.delete(cache.keys().next().value);cache.set(k,paint(cols,glow))}fill()}).catch(()=>{})},0);
   return `<div style="position:relative;width:100%;aspect-ratio:3/2;border-radius:12px;overflow:hidden;background:#09122a">
-    <canvas class="bgraph" data-k="${k.replace(/"/g,'')}" ${onTap?`onclick="${onTap}"`:''} aria-label="Bodygraph" style="position:absolute;inset:0;width:100%;height:100%;opacity:0;transition:opacity .15s;${onTap?'cursor:pointer':''}"></canvas>${(typeof S!=='undefined'&&S.bgfxOff)?'':`<canvas class="bgfx" data-k="${k.replace(/"/g,'')}" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none"></canvas>`}${glow.size?`<canvas class="bgpulse" style="position:absolute;inset:0;width:100%;height:100%;display:none;pointer-events:none;animation:bgpulse 1.8s ease-in-out infinite"></canvas>`:''}</div>`};
+    <canvas class="bgraph" data-k="${k.replace(/"/g,'')}" ${onTap?`onclick="${onTap}"`:''} aria-label="Bodygraph" style="position:absolute;inset:0;width:100%;height:100%;opacity:0;transition:opacity .15s;${onTap?'cursor:pointer':''}"></canvas>${glow.size?`<canvas class="bgpulse" style="position:absolute;inset:0;width:100%;height:100%;display:none;pointer-events:none;animation:bgpulse 1.8s ease-in-out infinite"></canvas>`:''}</div>`};
 const st=document.createElement('style');st.textContent='@keyframes bgpulse{0%,100%{opacity:.08}50%{opacity:.75}}';document.head.appendChild(st);
 })();

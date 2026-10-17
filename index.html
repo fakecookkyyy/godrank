@@ -197,7 +197,6 @@ svg.i{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.8;stro
 <script src="anatomy-shapes.js"></script>
 <script src="anatomy.js"></script>
 <script src="bodygraph.js"></script>
-<script src="bodygraph-fx.js"></script>
 <script src="exercises.js"></script>
 <script src="illustrations.js"></script>
 <script src="planner.js"></script>
@@ -892,7 +891,6 @@ function pageView(){
      <div class="eyebrow" style="margin:14px 0 8px">Training days · ${splitName(U())}</div>
      <div class="week">${WD.map((d,i)=>`<button class="wd ${S.days.includes(i)?'done':''}" style="padding:12px 0" onclick="tglDay(${i})"><b>${d[0]}</b><i>${d}</i></button>`).join('')}</div>
      <div class="eyebrow" style="margin:18px 0 8px">Look</div>
-     <div class="field"><label>Muscle rank animations</label><button onclick="S.bgfxOff=!S.bgfxOff;save();render()" style="width:52px;height:30px;border-radius:999px;position:relative;background:${!S.bgfxOff?'linear-gradient(135deg,#9ad3ff,#5b8dff)':'#2a2438'}"><span style="position:absolute;top:3px;${!S.bgfxOff?'right:3px':'left:3px'};width:24px;height:24px;border-radius:50%;background:#fff"></span></button></div>
      <div class="field"><label>Void background</label><button onclick="S.voidOff=!S.voidOff;VoidBG.set(!S.voidOff);save();render()" style="width:52px;height:30px;border-radius:999px;position:relative;background:${!S.voidOff?'linear-gradient(135deg,#9ad3ff,#5b8dff)':'#2a2438'}"><span style="position:absolute;top:3px;${!S.voidOff?'right:3px':'left:3px'};width:24px;height:24px;border-radius:50%;background:#fff"></span></button></div>
      <button class="btn ghost" style="margin-top:24px;color:var(--bad)" onclick="if(confirm('Erase everything and start over?')){localStorage.removeItem('godrank2');S=load();render()}">${I('trash',16)} Reset app</button>`}
   if(p==='streak')b=streakPage();
