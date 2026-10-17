@@ -4,11 +4,11 @@
 (()=>{
 // muscle groups used by the app -> anatomy regions (each region may hold several pieces, e.g. every ab block)
 const GROUP={chest:['F.chest'],shoulders:['F.shoulders','B.shoulders'],traps:['F.traps','B.traps'],biceps:['F.biceps'],triceps:['B.triceps'],
-  forearms:['F.forearms','B.forearms'],core:['F.core','F.obliques'],back:['B.back','B.lowerback'],glutes:['B.glutes'],quads:['F.quads'],hams:['B.hams'],calves:['F.calves','B.calves']};
+  forearms:['F.forearms','B.forearms'],core:['F.core','F.obliques','B.obliques'],back:['B.back','B.lowerback'],glutes:['B.glutes'],quads:['F.quads'],hams:['B.hams'],calves:['F.calves','B.calves']};
 window.MUSCLE_NAMES={chest:'Chest',shoulders:'Shoulders',traps:'Traps',biceps:'Biceps',triceps:'Triceps',forearms:'Forearms',core:'Core',back:'Back',glutes:'Glutes',quads:'Quads',hams:'Hamstrings',calves:'Calves'};
 window.MUSCLES=Object.keys(GROUP);
 const REGIONS={F:['traps','shoulders','chest','biceps','forearms','core','obliques','quads','calves'],
-               B:['traps','shoulders','back','lowerback','triceps','forearms','glutes','hams','calves']};
+               B:['traps','shoulders','back','lowerback','obliques','triceps','forearms','glutes','hams','calves']};
 const NEUTRAL='#c9ccd3', UNRANKED='#8d929b';
 let uid=0;
 // grey-ish rank colors (Sword God silver) would read as "unranked": tint them steel blue so they still read as colored
