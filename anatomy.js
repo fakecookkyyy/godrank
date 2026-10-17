@@ -40,6 +40,11 @@ function polys(fig){
 const FP=polys(F),BP=polys(B);
 const toD=p=>'M'+p.map(q=>q.join(' ')).join('L')+'Z';
 let uid=0;
+// grey-ish rank colors (Sword God silver) vanish on the grey body: tint them steel blue so they still read as colored
+const vivid=h=>{const c=[1,3,5].map(i=>parseInt(h.slice(i,i+2),16)),mx=Math.max(...c),mn=Math.min(...c);
+  if(mx-mn>40)return h;return '#'+c.map((v,i)=>Math.round(v*.45+[110,160,235][i]*.55).toString(16).padStart(2,'0')).join('')};
+// darker tone of a #rrggbb color for muscle outlines
+const shade=(h,f)=>'#'+[1,3,5].map(i=>Math.round(parseInt(h.slice(i,i+2),16)*f).toString(16).padStart(2,'0')).join('');
 // colorOf(group) -> color or null; glow: Set of groups to pulse; view: 'both'|'front'|'back'
 // viewBox zoomed onto one muscle group (used for the muscle filter tiles)
 function focusBox(g){const rs=GROUP[g]||[];const front=rs.some(r=>r.startsWith('F.'));const pre=front?'F.':'B.',fig=front?FP:BP;
@@ -52,11 +57,12 @@ window.anatomy=function({colorOf=()=>null,glow=new Set(),view='both',height=360,
   const region=(fig,prefix)=>{
     const sel={};for(const [g,list] of Object.entries(GROUP))for(const r of list)if(r.startsWith(prefix))(sel[r.slice(2)]||=[]).push(g);
     const SH=window.MUSCLE_SHAPES||{},done=new Set();
-    return fig.map(([k,p])=>{const gs=sel[k]||[];const g=gs[0];const col=g&&colorOf(g);const gl=g&&glow.has(g);
+    return fig.map(([k,p])=>{const gs=sel[k]||[];const g=gs[0];let col=g&&colorOf(g);const gl=g&&glow.has(g);
       if(!col&&!gl)return '';
       // the cut-out shape covers both sides at once; fall back to the traced polygon
       let d=SH[prefix+k];if(d){if(done.has(k))return '';done.add(k)}else d=toD(p);
-      return (col?`<path d="${d}" fill-rule="evenodd" fill="${col}" fill-opacity=".78" style="mix-blend-mode:multiply"/><path d="${d}" fill-rule="evenodd" fill="${col}" fill-opacity=".22"/>`:'')+
+      if(col)col=vivid(col);const dk=col&&shade(col,.5);
+      return (col?`<path d="${d}" fill-rule="evenodd" fill="${col}" fill-opacity=".62"/><path d="${d}" fill-rule="evenodd" fill="${col}" fill-opacity=".55" style="mix-blend-mode:multiply"/><path d="${d}" fill="none" stroke="${dk}" stroke-width="3" stroke-opacity=".9" stroke-linejoin="round"/>`:'')+
         (gl?`<path d="${d}" fill-rule="evenodd" fill="#7cc4ff" fill-opacity=".18" stroke="#7cc4ff" stroke-width="7" filter="url(#${id}g)"><animate attributeName="opacity" values=".35;1;.35" dur="1.8s" repeatCount="indefinite"/></path><path d="${d}" fill-rule="evenodd" fill="none" stroke="#bfe4ff" stroke-width="2.5" stroke-opacity=".9"/>`:'');}).join('');
   };
   return `<svg viewBox="${vb}" height="${height}" style="display:block;margin:0 auto;max-width:100%" aria-label="Muscle map">
