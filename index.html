@@ -247,7 +247,14 @@ const COACH_IMG='assets/rudeus.jpg';
 const overall=()=>{const v=Object.values(S.lifts).map(l=>l.rating);return v.length?Math.round(v.reduce((a,b)=>a+b,0)/v.length):0};
 const bestRating=()=>Math.max(0,...Object.values(S.lifts).map(l=>l.rating));
 const topPct=r=>Math.max(.01,100*Math.pow(1-r/1000,1.6)).toFixed(1);
-function muscleRating(m){let b=0;for(const [id,l] of Object.entries(S.lifts)){const e=EXI[id];if(!e)continue;const i=e.m.indexOf(m);if(i===0)b=Math.max(b,l.rating);else if(i>0)b=Math.max(b,Math.round(l.rating*.85))}return b}
+const BACKSUB=new Set(['lats','upperback','lowerback']);
+const musList=(e,m)=>BACKSUB.has(m)?(e.sub||[]):e.m;
+function muscleRating(m){return muscleBest(m)[1]}
+// best lift for a muscle: [exercise id, rating] (secondary muscles count at 85%)
+function muscleBest(m){let b=0,best=null;for(const [id,l] of Object.entries(S.lifts)){const e=EXI[id];if(!e)continue;const i=musList(e,m).indexOf(m);
+  const r=i===0?l.rating:i>0?Math.round(l.rating*.85):0;if(r>b){b=r;best=id}}return [best,b]}
+// a staple exercise to rank an unranked muscle
+const musSuggest=m=>(EXL.find(e=>e.staple&&musList(e,m)[0]===m)||EXL.find(e=>musList(e,m)[0]===m)||{}).n;
 function bodyStrength(){return MUSCLES.reduce((a,m)=>a+muscleRating(m)/1000,0)/MUSCLES.length}
 const muscleColor=m=>{const r=muscleRating(m);return r?rankFor(r).rank.hex:null};
 // tap a muscle on the Bodygraph -> open its group in Ranks > Bodygraph
@@ -569,7 +576,7 @@ function donut(counts,total){let a=-Math.PI/2,out='';const R=46,cx=60,cy=60;
     out+=`<path d="M${cx+R*Math.cos(a)} ${cy+R*Math.sin(a)} A${R} ${R} 0 ${big} 1 ${cx+R*Math.cos(a2)} ${cy+R*Math.sin(a2)}" fill="none" stroke="${rk.hex}" stroke-width="16" stroke-linecap="butt" style="filter:drop-shadow(0 0 4px ${rk.hex})"/>`;a+=da}
   return `<svg viewBox="0 0 120 120" width="120">${out}<text x="60" y="58" text-anchor="middle" fill="#fff" font-size="20" font-weight="900" font-family="Figtree">${total}</text><text x="60" y="74" text-anchor="middle" fill="#9a95ab" font-size="10" font-weight="700" font-family="Figtree">ranks</text></svg>`}
 const REGION={all:null,upper:['chest','back','shoulders','arms'],lower:['legs'],core:['core']};
-const MGROUPS=[['Arms',['biceps','triceps','forearms']],['Legs',['quads','hams','glutes','calves']],['Core',['core']],['Shoulders',['shoulders','traps']],['Chest',['chest']],['Back',['back']]];
+const MGROUPS=[['Arms',['biceps','triceps','forearms']],['Legs',['quads','hams','glutes','calves']],['Core',['core']],['Shoulders',['shoulders']],['Chest',['chest']],['Back',['lats','upperback','lowerback','traps']]];
 
 /* ---------- calculator: carousel + scroll wheels (also how past workouts get logged) ---------- */
 // bodyweight moves with extra load are rated as weighted versions of themselves
@@ -717,7 +724,8 @@ function ranksView(){
   if(sub==='body'){const open=S._mg;b=`<div class="card" style="padding:10px 6px">${bodygraph({colorOf:muscleColor,onTap:"bgTap(event)"})}<div class="legend">${RANKS.map(r=>`<span><i style="background:${r.hex}"></i>${r.name.replace(' God','')}</span>`).join('')}</div></div>
     <div class="h3" style="margin:6px 2px 8px">Muscle rankings</div>
     ${MGROUPS.map(([g,ms])=>{const done=ms.filter(m=>muscleRating(m)).length;return `<div class="card" style="padding:12px 14px;margin-bottom:8px"><button class="between" style="width:100%" onclick="S._mg=S._mg==='${g}'?null:'${g}';render()"><span><b style="font-size:16px">${g}</b><div class="muted" style="font-size:12px">${done}/${ms.length} complete</div></span>${I(open===g?'left':'right',18)}</button>
-      ${open===g?ms.map(m=>{const r=muscleRating(m),k=r?rankFor(r):null;return `<div class="between" style="margin-top:10px"><span class="row" style="gap:10px">${k?fx(k.rank,36):`<span class="ibtn" style="width:36px;height:36px">${I('dumbbell',15)}</span>`}<b>${MUSCLE_NAMES[m]}</b></span><span style="font-weight:800;font-size:12px;color:${k?k.rank.hex:'var(--dim)'}">${k?k.rank.name.toUpperCase()+' '+k.div:'Unranked'}</span></div>`}).join(''):''}</div>`}).join('')}`}
+      ${open===g?ms.map(m=>{const [bid,r]=muscleBest(m),k=r?rankFor(r):null,bl=bid&&S.lifts[bid],sg=!k&&musSuggest(m);
+        return `<div class="between" style="margin-top:10px"${bid?` onclick="exSheet('${bid}')"`:''}><span class="row" style="gap:10px">${k?fx(k.rank,36):`<span class="ibtn" style="width:36px;height:36px">${I('dumbbell',15)}</span>`}<span><b>${MUSCLE_NAMES[m]}</b><div class="muted" style="font-size:12px">${bid?`${EXI[bid].n} · ${bl.w?bl.w+' lb × ':''}${bl.r}${EXI[bid].type==='time'?'s':bl.w?'':' reps'}`:sg?`Log ${sg} to rank`:''}</div></span></span><span style="font-weight:800;font-size:12px;color:${k?k.rank.hex:'var(--dim)'}">${k?k.rank.name.toUpperCase()+' '+k.div:'Unranked'}</span></div>`}).join(''):''}</div>`}).join('')}`}
   if(sub==='leagues'){
     if(nRanked<PLACE)b=`<div class="card" style="border-color:color-mix(in srgb,var(--accent) 50%,transparent)"><div class="h2">Unlock rank leagues</div><p class="muted" style="margin:4px 0 14px">Rank ${PLACE-nRanked} more exercises to join a league.</p>${placementsHex()}<button class="btn" style="margin-top:14px" onclick="S._sub='calc';render()">Rank exercises</button></div>`;
     else{const me=o,names=['Paul','Zenith','Eris','Ruijerd','Sylphie','Roxy','Ghislaine','Norn','Cliff','Zanoba'];const rows=names.map((n,i)=>({n,p:Math.max(0,Math.round(me+150-i*32+((n.length*37)%25)))}));rows.push({n:(S.name||'You')+' (you)',p:me,me:1});rows.sort((a,b)=>b.p-a.p);

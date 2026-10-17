@@ -394,6 +394,14 @@ for(const [group,txt] of Object.entries(RAW))for(const line of txt.split('\n')){
   lines.push(ex);
 }
 
+// back is split into lats / upper back / lower back for the muscle rankings (ex.sub, primary first)
+const LATS=/pull-?up|\bchin|pulldown|pull-down|pullover|\blat\b|straight-arm|muscle-up|rope climb/i;
+for(const e of lines){if(!e.m.includes('back'))continue;
+  if(['hinge','ext','swing','squat'].includes(e.pat))e.sub=['lowerback'];
+  else if(['vpull','pullover','triext','hang'].includes(e.pat)||LATS.test(e.n))e.sub=e.pat==='vpull'?['lats','upperback']:['lats'];
+  else if(e.pat==='row')e.sub=/kroc|single|one-arm|meadows|pendlay|t-bar|seal/i.test(e.n)?['lats','upperback']:['upperback','lats'];
+  else if(['abs','crunch','hold'].includes(e.pat))e.sub=[];
+  else e.sub=['upperback']}
 window.EXL=lines;
 window.EXI=Object.fromEntries(lines.map(e=>[e.id,e]));
 window.EQNAME=EQ;

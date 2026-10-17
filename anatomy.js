@@ -26,7 +26,7 @@ const B={cx:1180, limbCx:1177, regions:{
 // muscle groups used by the app -> anatomy regions
 const GROUP={chest:['F.chest'],shoulders:['F.shoulders','B.shoulders'],traps:['F.traps','B.traps'],biceps:['F.biceps'],triceps:['B.triceps'],
   forearms:['F.forearms','B.forearms'],core:['F.core','F.obliques'],back:['B.back','B.lowerback'],glutes:['B.glutes'],quads:['F.quads'],hams:['B.hams'],calves:['F.calves','B.calves']};
-window.MUSCLE_NAMES={chest:'Chest',shoulders:'Shoulders',traps:'Traps',biceps:'Biceps',triceps:'Triceps',forearms:'Forearms',core:'Core',back:'Back',glutes:'Glutes',quads:'Quads',hams:'Hamstrings',calves:'Calves'};
+window.MUSCLE_NAMES={chest:'Chest',shoulders:'Shoulders',traps:'Traps',biceps:'Biceps',triceps:'Triceps',forearms:'Forearms',core:'Core',back:'Back',lats:'Lats',upperback:'Upper Back',lowerback:'Lower Back',glutes:'Glutes',quads:'Quads',hams:'Hamstrings',calves:'Calves'};
 window.MUSCLES=Object.keys(GROUP);
 
 function polys(fig){
