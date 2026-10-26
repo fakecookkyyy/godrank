@@ -5,13 +5,7 @@ const C={skin:'#f1c19b',skin2:'#d9a27c',shirt:'#3b82f6',shirt2:'#2563eb',shorts:
   bar:'#cbd5e1',barD:'#64748b',p1:'#ef4444',p2:'#2563eb',p3:'#1f2937',frame:'#64748b',frameD:'#475569',pad:'#dc2626',seat:'#334155',cable:'#e2e8f0',band:'#f59e0b'};
 const L=(a,b,w,c)=>`<line x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}" stroke="${c}" stroke-width="${w}" stroke-linecap="round"/>`;
 const O=(p,r,c,extra='')=>`<circle cx="${p[0]}" cy="${p[1]}" r="${r}" fill="${c}" ${extra}/>`;
-const OUT='#111827';
-// A dark keyline keeps the figure readable at thumbnail size on a phone.
-const BL=(a,b,w,c)=>L(a,b,w+2.6,OUT)+L(a,b,w,c);
-const BO=(p,r,c,extra='')=>O(p,r+1.5,OUT)+O(p,r,c,extra);
 const off=(p,d)=>p&&[p[0]+d[0],p[1]+d[1]];
-const BG={chest:'#fee2e2',back:'#dbeafe',shoulders:'#f3e8ff',arms:'#ffedd5',legs:'#dcfce7',core:'#cffafe'};
-function scene(e){const bg=BG[e.group]||'#e2e8f0';return `<rect width="100" height="100" rx="12" fill="${bg}"/><path d="M8 18H92M8 42H92M8 66H92M8 90H92M18 8V94M42 8V94M66 8V94M90 8V94" stroke="#0f172a" stroke-opacity=".08" stroke-width="1"/>`}
 
 /* ---------- the figure ---------- */
 // pose: head h, shoulder s, hip p, near limbs e,w,k,f ; far limbs e2,w2,k2,f2 (default: near limbs offset back)
@@ -19,16 +13,16 @@ function figure(P){
   const d=P.far||[-3,-1.5],e2=P.e2||off(P.e,d),w2=P.w2||off(P.w,d),k2=P.k2||off(P.k,d),f2=P.f2||off(P.f,d),s2=P.s2||off(P.s,d),p2=P.p2||off(P.p,d);
   let g='';
   // far side (darker)
-  g+=BL(p2,k2,10,C.shorts2)+BL(k2,f2,7.5,C.skin2)+BO(f2,3.6,'#cbd5e1');
-  g+=BL(s2,e2,7,C.shirt2)+BL(e2,w2,6,C.skin2)+BO(w2,3.4,C.skin2);
+  g+=L(p2,k2,10,C.shorts2)+L(k2,f2,7.5,C.skin2)+O(f2,3.6,'#cbd5e1');
+  g+=L(s2,e2,7,C.shirt2)+L(e2,w2,6,C.skin2)+O(w2,3.4,C.skin2);
   // torso
-  g+=BL(P.s,P.p,15,C.shirt)+BL(P.p,P.p,15,C.shorts);
+  g+=L(P.s,P.p,15,C.shirt)+L(P.p,P.p,15,C.shorts);
   // near legs
-  g+=BL(P.p,P.k,10.5,C.shorts)+BL(P.k,P.f,8,C.skin)+BO(P.f,3.8,C.shoe);
+  g+=L(P.p,P.k,10.5,C.shorts)+L(P.k,P.f,8,C.skin)+O(P.f,3.8,C.shoe);
   // head
-  const hd=P.hd||[0,-1];g+=BL(P.s,P.h,6,C.skin)+BO(P.h,7.4,C.skin)+`<path d="M${P.h[0]-7.4+hd[0]} ${P.h[1]-0.5} a7.4 7.4 0 0 1 14.8 0 q-7.4 -4 -14.8 0z" fill="${C.hair}" stroke="${OUT}" stroke-width="1.5" stroke-linejoin="round" transform="rotate(${P.hr||0} ${P.h[0]} ${P.h[1]})"/>`;
+  const hd=P.hd||[0,-1];g+=L(P.s,P.h,6,C.skin)+O(P.h,7.4,C.skin)+`<path d="M${P.h[0]-7.4+hd[0]} ${P.h[1]-0.5} a7.4 7.4 0 0 1 14.8 0 q-7.4 -4 -14.8 0z" fill="${C.hair}" transform="rotate(${P.hr||0} ${P.h[0]} ${P.h[1]})"/>`;
   // near arm
-  g+=BL(P.s,P.e,7.5,C.shirt)+BL(P.e,P.w,6.5,C.skin)+BO(P.w,3.6,C.skin);
+  g+=L(P.s,P.e,7.5,C.shirt)+L(P.e,P.w,6.5,C.skin)+O(P.w,3.6,C.skin);
   return g;
 }
 
@@ -132,7 +126,7 @@ function dress(P,e){
 
 window.exIllu=function(e,size=48){
   const P=poseFor(e),{back,front}=dress(P,e);
-  return `<svg viewBox="0 0 100 100" width="${size}" height="${size}" style="display:block" role="img" aria-label="${e.n} exercise illustration">${scene(e)}${floor}${back}${figure(P)}${front}</svg>`;
+  return `<svg viewBox="0 0 100 100" width="${size}" height="${size}" style="display:block">${floor}${back}${figure(P)}${front}</svg>`;
 };
 
 /* ---------- equipment icons ---------- */
