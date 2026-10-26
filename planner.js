@@ -67,6 +67,13 @@ window.dayMuscles=function(type){const t=TEMPLATES[type]||[];const m=new Set();f
 /* sets x reps by goal and slot role */
 function prescription(slot,ex,u){
   const g=u.goal||'lean',beg=u.exp==='beg';
+  // Lean muscle uses a low-volume strength-and-size progression: a hard top set,
+  // followed by one lighter back-off set. The workout view adds a third back-off
+  // set only when the top set lands below the minimum rep target.
+  if(g==='lean'){
+    if(ex.type==='time')return {sets:2,lo:20,hi:45,style:'top-backoff'};
+    return {sets:2,lo:5,hi:8,backoffLo:6,backoffHi:8,style:'top-backoff'};
+  }
   if(ex.type==='time')return {sets:3,lo:20,hi:45};
   if(slot.heavy&&ex.kind==='compound')return g==='strength'?{sets:4,lo:3,hi:5}:g==='fat'?{sets:3,lo:8,hi:10}:{sets:beg?3:4,lo:6,hi:8};
   if(ex.kind==='compound')return g==='strength'?{sets:3,lo:5,hi:8}:g==='fat'?{sets:3,lo:10,hi:12}:{sets:3,lo:8,hi:12};
@@ -104,6 +111,9 @@ window.genDay=function(type,u,loc,seed=0,keep={}){
     used.add(ex.id);
     return {id:ex.id,slot:i,locked:!!keep[i],...prescription(slot,ex,u)};
   }).filter(Boolean);
+  // The lean-muscle plan deliberately stays at two work sets per exercise.
+  // Other programs retain their existing 14-20 set volume guardrail.
+  if(u.goal==='lean')return items;
   // keep total volume in the 14-20 set range
   let total=items.reduce((a,b)=>a+b.sets,0);
   while(total>20&&items.length>4){total-=items.pop().sets}
@@ -118,9 +128,27 @@ window.swapOptions=function(type,u,loc,slotIndex,usedIds){
 
 /* ---------- progressive overload coach ---------- */
 function inc(ex){if(ex.type!=='w')return 0;if(ex.kind==='compound'&&ex.group==='legs'&&['bb','tb','mc','sm'].includes(ex.eq))return 10;return 5}
+function roundLoad(ex,w){return ex.eq==='wb'?Math.max(0,Math.round(w/5)*5):round5(w)}
+function backoffLoad(ex,w){return roundLoad(ex,w*.9)}
 // last = {sets:[{w,r}]} from the previous session of this exercise
 window.coach=function(ex,it,last,u,rating){
   const lo=it.lo,hi=it.hi;
+  if(it.style==='top-backoff'){
+    if(ex.type!=='w'){
+      if(!last)return {w:0,r:lo,backoffR:it.backoffLo||lo,msg:`Two hard sets today: aim for ${lo}–${hi} clean reps.`,tag:'new',style:'top-backoff'};
+      const best=+((last.sets[0]||{}).r)||0;
+      return {w:0,r:Math.min(hi,Math.max(lo,best+1)),backoffR:it.backoffLo||lo,msg:`Top set first. Last time: ${best} reps — beat it with clean form.`,tag:'reps',style:'top-backoff'};
+    }
+    if(!last){
+      const R={beg:220,int:400,adv:560}[u.exp||'int'];let w=needFor(ex,R,hi,u);w=ex.eq==='wb'?Math.max(0,round5(w)):round5(w*.9);
+      if(rating){const r2=needFor(ex,Math.max(1,rating-30),hi,u);w=ex.eq==='wb'?Math.max(0,round5(r2)):round5(r2)}
+      return {w,backoffW:backoffLoad(ex,w),r:lo,backoffR:it.backoffLo||lo,msg:`Top set first: ${w} lb for ${lo}–${hi} clean reps. Then reduce to ${backoffLoad(ex,w)} lb for your back-off set.`,tag:'new',style:'top-backoff'};
+    }
+    const topSet=last.sets[0]||last.sets.find(s=>(+s.w||0)>0)||{w:0,r:0},top=+topSet.w||0,reps=+topSet.r||0;
+    if(reps>=hi){const w=top+inc(ex);return {w,backoffW:backoffLoad(ex,w),r:lo,backoffR:it.backoffLo||lo,msg:`Add +${inc(ex)} lb today. You reached ${reps} reps on your top set; take the back-off set at ${backoffLoad(ex,w)} lb.`,tag:'up',style:'top-backoff'}}
+    if(reps<lo){const w=roundLoad(ex,top*.92);return {w,backoffW:backoffLoad(ex,w),r:lo,backoffR:it.backoffLo||lo,msg:`Your top set was below ${lo} reps, so lower it to ${w} lb. Get ${lo}–${hi} clean reps, then do the back-off set at ${backoffLoad(ex,w)} lb.`,tag:'down',style:'top-backoff'}}
+    return {w:top,backoffW:backoffLoad(ex,top),r:Math.min(hi,reps+1),backoffR:it.backoffLo||lo,msg:`Keep ${top} lb for the top set and beat last time’s ${reps} reps. Then back off to ${backoffLoad(ex,top)} lb for ${it.backoffLo||lo}–${it.backoffHi||hi}.`,tag:'reps',style:'top-backoff'};
+  }
   if(ex.type!=='w'){
     if(!last)return {w:0,r:hi,msg:`First time. Aim for ${hi}${ex.type==='time'?' seconds':' clean reps'}.`,tag:'new'};
     const best=Math.max(...last.sets.map(s=>s.r));const goal=best+(ex.type==='time'?5:1);
