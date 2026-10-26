@@ -97,6 +97,14 @@ const POSE_OF={'chest-dip':'dip','bench-dip':'dip','triceps-dip':'dip','push-up'
   'muscle-up':'vpull','rope-climb':'hang','scapular-pull-up':'hang','tibialis-raise':'calf','jump-rope':'cardio','straight-arm-pulldown':'triext','lat-prayer':'triext','cable-pullover':'triext'};
 
 function poseFor(e){return POSE[POSE_OF[e.id]]||POSE[e.pat]||POSE.grip}
+function motionFor(e){const p=POSE_OF[e.id]||e.pat;
+  if(['squat','legpress','lunge','legext','legcurl','hipthrust','abduct','calf'].includes(p))return 'lower';
+  if(['hpress','vpress','fly','pullover','lateral','front','triext','dip','pushup'].includes(p))return 'press';
+  if(['row','vpull','curl','rear','upright','shrug','carry','wrist','grip'].includes(p))return 'pull';
+  if(['hinge','swing','ext'].includes(p))return 'hinge';
+  if(['crunch','abs','antirot','hold','hang'].includes(p))return 'core';
+  return 'steady';
+}
 
 // equipment dressing depends on the grip type of the pose and the exercise's equipment
 function dress(P,e){
@@ -132,7 +140,9 @@ function dress(P,e){
 
 window.exIllu=function(e,size=48){
   const P=poseFor(e),{back,front}=dress(P,e);
-  return `<svg viewBox="0 0 100 100" width="${size}" height="${size}" style="display:block" role="img" aria-label="${e.n} exercise illustration">${scene(e)}${floor}${back}${figure(P)}${front}</svg>`;
+  // Animate only the larger instructional views; static thumbnails stay quick and calm.
+  const motion=size>=60?` class="ex-motion ${motionFor(e)}"`:'';
+  return `<svg viewBox="0 0 100 100" width="${size}" height="${size}" style="display:block" role="img" aria-label="${e.n} exercise illustration">${scene(e)}${floor}${back}<g${motion}>${figure(P)}${front}</g></svg>`;
 };
 
 /* ---------- equipment icons ---------- */
