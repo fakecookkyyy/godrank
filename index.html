@@ -318,6 +318,20 @@ function planFor(t){
   if(!p||p.type!==type||p.loc!==S.loc||p.program!==program){p={type,loc:S.loc,program,seed:0,items:genDay(type,U(),S.loc,0)};S.plans[k]=p;save()}
   return p;
 }
+function leanProgramSheet(){
+  let p=null;for(let d=0;d<7&&!p;d++)p=planFor(addDays(Date.now(),d));
+  if(!p){sheet(`<div class="h2">Your lean-muscle plan</div><p class="muted" style="margin-top:8px">Pick at least two training days to build your example workout.</p>`);return}
+  const it=p.items.find(x=>EXI[x.id].type==='w')||p.items[0],e=EXI[it.id],c=coach(e,it,lastFor(it.id),U(),S.lifts[it.id]?.rating);
+  const sample=(w,lo,hi)=>e.type==='w'?`${e.eq==='wb'?(w?`+${w} lb`:'Bodyweight'):`${w} lb`} × ${lo}–${hi}`:e.type==='time'?`${lo}–${hi} sec`:`${lo}–${hi} reps`;
+  const top=sample(c.w,it.lo,it.hi),back=sample(c.backoffW??c.w,it.backoffLo||it.lo,it.backoffHi||it.hi);
+  sheet(`<div class="eyebrow">New lean-muscle program</div><div class="h2" style="margin-top:3px">How one exercise works</div><p class="muted" style="font-size:13px;margin:6px 0 14px">Example: <b>${e.n}</b> on your next ${DAYNAME[p.type]} day. Your numbers adjust from your logged sets.</p>
+   <div class="card" style="padding:14px"><div class="eyebrow">1 · Top set</div><div class="h2 num" style="margin-top:3px">${top}</div><p class="muted" style="font-size:13px;margin-top:5px">One hard, controlled set. Stop if your form breaks down.</p></div>
+   <div style="height:18px;border-left:2px dashed var(--line2);margin:0 0 0 18px"></div>
+   <div class="card" style="padding:14px"><div class="eyebrow">2 · Back-off set</div><div class="h2 num" style="margin-top:3px">${back}</div><p class="muted" style="font-size:13px;margin-top:5px">Reduce the load a little, then get 6–8 clean reps.</p></div>
+   <div class="hint" style="margin-top:12px">${I('target',15)}<span><b>Top set below 5 reps?</b> The workout adds one more back-off set.</span></div>
+   <div class="hint" style="margin-top:8px">${I('bolt',15)}<span><b>Reach 8 clean reps?</b> Add a little weight on the next workout.</span></div>
+   <button class="btn" style="width:100%;margin-top:14px" onclick="closeSheet();S.tab='plan';S._sel=null;render()">View my workout</button>`)
+}
 function nextTrainingLabel(){for(let k=1;k<8;k++){const t=addDays(Date.now(),k),ty=typeForDate(t);if(ty)return `${WD[new Date(t).getDay()]} · ${DAYNAME[ty]}`}return '—'}
 
 /* coach line on Home */
@@ -472,8 +486,9 @@ function planView(){
         <p class="dim" style="font-size:12px;text-align:center;margin-top:10px">Lock the ones you like, then roll the dice for the rest.</p>`;
     }
   }
+  const guide=S.goal==='lean'?`<button class="card" style="width:100%;text-align:left;margin-bottom:14px" onclick="leanProgramSheet()"><div class="between"><div><div class="eyebrow">New program guide</div><div class="h3" style="margin-top:3px">Top set → back-off set</div></div>${I('right',20)}</div><p class="muted" style="font-size:13px;margin-top:6px">See a personalized example before you train.</p></button>`:'';
   return `<div class="top"><div><div class="eyebrow">${splitName(U())}</div><div class="h2">Your plan</div></div><button class="ibtn" onclick="S.tab='profile';S._page='settings';render()">${I('gear')}</button></div>
-   <div class="body"><div class="week" style="margin-bottom:16px">${strip}</div>${b}</div>`;
+   <div class="body">${guide}<div class="week" style="margin-bottom:16px">${strip}</div>${b}</div>`;
 }
 const curPlan=()=>planFor(S._sel??sod(Date.now()));
 function setLoc(l){S.loc=l;save();render()}
