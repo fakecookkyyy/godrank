@@ -481,7 +481,9 @@ function lockItem(i){const p=curPlan();p.items[i].locked=!p.items[i].locked;save
 function reroll(){const p=curPlan();p.seed=(p.seed||0)+1+Math.floor(Math.random()*1000);const keep={};p.items.forEach(it=>{if(it.locked)keep[it.slot]=it.id});
   p.items=genDay(p.type,U(),p.loc,p.seed,keep);p.items.forEach(it=>{if(keep[it.slot]===it.id)it.locked=true});save();render()}
 function swapItem(i){const p=curPlan(),it=p.items[i];const opts=swapOptions(p.type,U(),p.loc,it.slot,p.items.map(x=>x.id)).slice(0,40);
-  sheet(`<div class="h2">Swap ${esc(EXI[it.id].n)}</div><p class="muted" style="font-size:13px;margin:4px 0 12px">Same movement, different exercise.</p>
+  sheet(`<div class="h2">Swap ${esc(EXI[it.id].n)}</div><p class="muted" style="font-size:13px;margin:4px 0 12px">Choose one of the recommendations or search the full exercise library.</p>
+   <button class="btn" style="width:100%;margin-bottom:14px" onclick="openPicker('swap',${i})">${I('search',16)} Search all ${EXL.length} exercises</button>
+   <div class="eyebrow" style="margin:0 2px 6px">Recommended swaps</div>
    ${opts.map(e=>`<button class="ex" onclick="doSwap(${i},'${e.id}')"><span class="t"><b>${e.n}</b><small>${e.eqName} · ${e.m.map(m=>MUSCLE_NAMES[m]).join(', ')}</small></span>${e.staple?'<span class="tag">Staple</span>':''}</button>`).join('')}`)}
 function doSwap(i,id){const p=curPlan();p.items[i].id=id;p.items[i].locked=true;save();closeSheet();render()}
 
@@ -725,7 +727,7 @@ const EQCAT=[['none','Bodyweight',['bw','tm'],'user','push-up'],['small','Small 
   ['smith','Smith machine',['sm'],'layers','smith-machine-squat'],['machines','Machines',['mc'],'layers','leg-press'],['cable','Cable machines',['cb'],'swap','cable-crossover'],['bands','Resistance bands',['bd'],'swap','band-pull-apart']];
 const MUSUP=['chest','shoulders','traps','biceps','triceps','forearms','back','core'],MUSLO=['quads','hams','glutes','calves'];
 const BACKVIEW=new Set(['traps','triceps','back','glutes','hams']);
-function openPicker(ctx){S._pick={ctx,q:'',eq:[],mus:[],sort:'az'};S._page='picker';if(S.tab!=='ranks'&&ctx==='calc')S.tab='ranks';render();setTimeout(()=>$('#pq')?.focus(),60)}
+function openPicker(ctx,swapIndex=null){closeSheet();S._pick={ctx,swapIndex,q:'',eq:[],mus:[],sort:'az'};S._page='picker';if(S.tab!=='ranks'&&ctx==='calc')S.tab='ranks';render();setTimeout(()=>$('#pq')?.focus(),60)}
 function pickFiltered(){const p=S._pick,q=p.q.toLowerCase(),eqs=new Set(p.eq.flatMap(k=>EQCAT.find(c=>c[0]===k)[2]));
   let L=EXL.filter(e=>(!q||e.n.toLowerCase().includes(q))&&(!eqs.size||eqs.has(e.eq))&&(!p.mus.length||p.mus.includes(e.m[0])));
   if(p.sort==='rank')L=L.sort((a,b)=>(S.lifts[b.id]?.rating||0)-(S.lifts[a.id]?.rating||0)||a.n.localeCompare(b.n));else L=L.sort((a,b)=>a.n.localeCompare(b.n));return L}
@@ -734,14 +736,15 @@ function pickerBody(){const p=S._pick,L=pickFiltered();let last='',list='';
   if(p.sort==='az')for(const e of L){const c=e.n[0].toUpperCase();if(c!==last){last=c;list+=`<div class="eyebrow" style="margin:12px 4px 6px">${c}</div>`}list+=pickRow(e)}else list=L.map(pickRow).join('');
   const recent=!p.q&&!p.eq.length&&!p.mus.length?[...new Set([...S.history].reverse().map(h=>h.ex))].slice(0,4).map(id=>EXI[id]).filter(Boolean):[];
   return `${recent.length?`<div class="eyebrow" style="margin:4px 4px 6px">Recent exercises</div>${recent.map(pickRow).join('')}<div class="eyebrow" style="margin:16px 4px 0">All exercises · ${L.length}</div>`:`<div class="eyebrow" style="margin:4px 4px 0">${L.length} exercises</div>`}${list||'<p class="muted" style="padding:20px 4px">No exercises match.</p>'}`}
-function pickerView(){const p=S._pick;
-  return `<div class="top"><button class="ibtn" onclick="S._page=null;render()">${I('left')}</button><div class="h2">Add exercise</div><span style="width:38px"></span></div>
+function pickerView(){const p=S._pick,title=p.ctx==='swap'?'Choose exercise':'Add exercise';
+  return `<div class="top"><button class="ibtn" onclick="S._page=null;render()">${I('left')}</button><div class="h2">${title}</div><span style="width:38px"></span></div>
    <div style="padding:0 18px 10px"><div class="field" style="margin-bottom:10px">${I('search',18)}<input id="pq" style="width:100%;text-align:left" placeholder="Search exercise" value="${esc(p.q)}" oninput="S._pick.q=this.value;$('#plist').innerHTML=pickerBody();GodFX.scan($('#plist'))" autocomplete="off"></div>
     <div class="row" style="gap:8px"><button class="chip ${p.eq.length?'on':''}" style="flex:1" onclick="eqSheet()">${I('dumbbell',15)} Equipment${p.eq.length?' · '+p.eq.length:''}</button><button class="chip ${p.mus.length?'on':''}" style="flex:1" onclick="musSheet()">${I('target',15)} Muscle${p.mus.length?' · '+p.mus.length:''}</button>
      <button class="ibtn" onclick="S._pick.sort=S._pick.sort==='az'?'rank':'az';render()" title="Sort">${I('swap',16)}</button></div>
     <div class="dim" style="font-size:11px;font-weight:700;margin-top:6px">Sorted ${p.sort==='az'?'A–Z':'by rank'}</div></div>
    <div class="body" id="plist">${pickerBody()}</div>`}
-function pickChoose(id){const p=S._pick;if(p.ctx==='calc'){S._cx=id;S._cw=null;S._cr=null;S._cxw=null;S._page=null;S.tab='ranks';S._sub='calc';render()}}
+function pickChoose(id){const p=S._pick;if(p.ctx==='calc'){S._cx=id;S._cw=null;S._cr=null;S._cxw=null;S._page=null;S.tab='ranks';S._sub='calc';render();return}
+  if(p.ctx==='swap'&&Number.isInteger(p.swapIndex)){S._page=null;S._pick=null;doSwap(p.swapIndex,id)}}
 function tglIn(arr,v){const i=arr.indexOf(v);i<0?arr.push(v):arr.splice(i,1)}
 function filterFoot(){const n=pickFiltered().length;return `<button class="btn" style="margin-top:14px" onclick="closeSheet();render()">Show ${n} results</button><button class="btn ghost" style="margin-top:10px" onclick="S._pick.eq=[];S._pick.mus=[];closeSheet();render()">Clear filters</button>`}
 function eqSheet(){const p=S._pick;sheet(`<div class="h2" style="text-align:center;margin-bottom:14px">Equipment</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">${EQCAT.map(([k,l,eqs,ic,ph])=>`<button class="opt ${p.eq.includes(k)?'on':''}" style="margin:0;padding:8px;gap:10px" onclick="tglIn(S._pick.eq,'${k}');eqSheet()">${eqTile(k,52)}<span style="flex:1;font-weight:700;font-size:14px">${l}<small class="muted" style="font-size:11px">${EXL.filter(e=>eqs.includes(e.eq)).length}</small></span></button>`).join('')}</div>${filterFoot()}`)}
