@@ -126,6 +126,30 @@ window.swapOptions=function(type,u,loc,slotIndex,usedIds){
   return candidates(slot,loc,new Set(usedIds)).sort((a,b)=>score(b,slot,loc)-score(a,slot,loc));
 };
 
+// Extra movements let someone make a particular day's workout longer without
+// throwing away the split's main lifts. They stay within the muscles trained
+// that day and spread additions across those muscles where possible.
+window.extraPlanItems=function(type,u,loc,usedIds,count=1){
+  beg=u.exp==='beg';
+  const used=new Set(usedIds),targets=dayMuscles(type),patterns=new Set((TEMPLATES[type]||TEMPLATES.fullA).flatMap(s=>s.pats)),out=[],musCounts={};
+  const eligible=e=>(loc!=='home'||e.home)&&!used.has(e.id)&&e.pat!=='cardio'&&!(beg&&EASY.test(e.n));
+  for(let i=0;i<count;i++){
+    let pool=EXL.filter(e=>eligible(e)&&patterns.has(e.pat));
+    if(!pool.length)pool=EXL.filter(e=>eligible(e)&&e.m.some(m=>targets.has(m)));
+    if(!pool.length)pool=EXL.filter(eligible);
+    pool.sort((a,b)=>{
+      const as=(a.staple?6:0)+((loc==='home'?PREF_HOME:PREF_GYM)[a.eq]||1)-3*(musCounts[a.m[0]]||0);
+      const bs=(b.staple?6:0)+((loc==='home'?PREF_HOME:PREF_GYM)[b.eq]||1)-3*(musCounts[b.m[0]]||0);
+      return bs-as||a.n.localeCompare(b.n);
+    });
+    const ex=pool[0];if(!ex)break;
+    const slot={pats:[ex.pat],mus:ex.m[0]};
+    out.push({id:ex.id,slot:-1,extra:true,mus:ex.m[0],...prescription(slot,ex,u)});
+    used.add(ex.id);musCounts[ex.m[0]]=(musCounts[ex.m[0]]||0)+1;
+  }
+  return out;
+};
+
 /* ---------- progressive overload coach ---------- */
 function inc(ex){if(ex.type!=='w')return 0;if(ex.kind==='compound'&&ex.group==='legs'&&['bb','tb','mc','sm'].includes(ex.eq))return 10;return 5}
 function roundLoad(ex,w){return ex.eq==='wb'?Math.max(0,Math.round(w/5)*5):round5(w)}
