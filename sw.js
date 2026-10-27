@@ -1,6 +1,6 @@
 // Godrank offline cache: app shell precached, everything else (fonts) cached on first use.
 importScripts('push-messages.js');
-const V='godrank-v18';
+const V='godrank-v19';
 const SHELL=['./','index.html','manifest.webmanifest','badges.js','godfx.js','anatomy-shapes.js','anatomy.js','bodygraph.js','push-messages.js','reminders.js','exercises.js','illustrations.js','planner.js','voidbg.js',
   'assets/anatomy.jpg','assets/ranks/north.jpg','assets/ranks/sword.jpg','assets/ranks/death.jpg','assets/ranks/demon.jpg','assets/ranks/fighting.jpg','assets/ranks/dragon.jpg','assets/ranks/technique.jpg','assets/ranks/multi.jpg','assets/bodygraph/base.jpg','assets/bodygraph/labels.png','assets/rudeus.jpg','assets/icons/icon-180.png','assets/icons/icon-192.png','assets/icons/icon-512.png'];
 self.addEventListener('install',e=>{e.waitUntil(caches.open(V).then(c=>c.addAll(SHELL)));self.skipWaiting()});

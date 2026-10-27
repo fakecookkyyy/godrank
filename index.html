@@ -475,7 +475,7 @@ function planView(){
       const tot=p.items.reduce((a,b)=>a+b.sets,0);
       b=`<div class="between" style="margin:4px 2px 12px"><div><div class="eyebrow">${new Date(sel).toLocaleDateString(undefined,{weekday:'long',month:'short',day:'numeric'})}</div><div class="h1" style="font-size:26px">${DAYNAME[p.type]}</div></div>
           <div class="seg" style="width:140px">${[['gym','Gym'],['home','Home']].map(([k,l])=>`<button class="${p.loc===k?'on':''}" onclick="setLoc('${k}')">${l}</button>`).join('')}</div></div>
-        <div class="row" style="margin-bottom:12px;gap:8px;flex-wrap:wrap"><span class="pill">${p.items.length} exercises</span><span class="pill">${tot} sets</span><span class="pill">${({lean:'Lean muscle',strength:'Strength',fat:'Fat loss',recomp:'Recomp'})[S.goal]}</span></div>
+        <div class="row" style="margin-bottom:12px;gap:8px;flex-wrap:wrap"><button class="pill" onclick="planSizeSheet()">${p.items.length} exercises ${I('gear',13)}</button><span class="pill">${tot} sets</span><span class="pill">${({lean:'Lean muscle',strength:'Strength',fat:'Fat loss',recomp:'Recomp'})[S.goal]}</span></div>
         ${p.program==='lean-top-backoff-v1'?`<p class="dim" style="font-size:12px;line-height:1.45;margin:0 2px 12px">Each exercise starts with one hard 5–8-rep top set, followed by a lighter 6–8-rep back-off set. Keep form controlled; an extra back-off set is added only if your top set is below five reps.</p>`:''}
         ${p.items.map((it,i)=>{const e=EXI[it.id],c=coach(e,it,lastFor(it.id),U(),S.lifts[it.id]?.rating),r=S.lifts[it.id];const scheme=it.style==='top-backoff'?`Top ${it.lo}–${it.hi} · back-off ${it.backoffLo}–${it.backoffHi}`:`${it.sets} × ${it.lo}–${it.hi}`;
           return `<div class="ex"><button onclick="exSheet('${e.id}')" class="row" style="flex:1;min-width:0;text-align:left;gap:12px">${r?fx(rankFor(r.rating).rank,40):`<span class="ibtn" style="width:40px;height:40px">${I('dumbbell',18)}</span>`}
@@ -483,6 +483,7 @@ function planView(){
             <button class="ibtn ${it.locked?'on':''}" onclick="lockItem(${i})" aria-label="Lock">${I(it.locked?'lock':'unlock',17)}</button><button class="ibtn" onclick="swapItem(${i})" aria-label="Swap">${I('swap',17)}</button></div>`}).join('')}
         <div class="row" style="margin-top:12px"><button class="btn ghost" style="flex:1" onclick="reroll()">${I('dice',18)} Randomize</button>
           <button class="btn" style="flex:1.3" ${sel!==today?'disabled':''} onclick="startWorkout()">${sel===today?'Continue':'Opens '+WD[new Date(sel).getDay()]}</button></div>
+        <button class="chip" style="width:100%;margin-top:10px" onclick="planSizeSheet()">${I('plus',15)} Adjust workout size</button>
         <p class="dim" style="font-size:12px;text-align:center;margin-top:10px">Lock the ones you like, then roll the dice for the rest.</p>`;
     }
   }
@@ -493,20 +494,37 @@ function planView(){
 const curPlan=()=>planFor(S._sel??sod(Date.now()));
 function setLoc(l){S.loc=l;save();render()}
 function lockItem(i){const p=curPlan();p.items[i].locked=!p.items[i].locked;save();render()}
-function reroll(){const p=curPlan();p.seed=(p.seed||0)+1+Math.floor(Math.random()*1000);const keep={};p.items.forEach(it=>{if(it.locked)keep[it.slot]=it.id});
-  p.items=genDay(p.type,U(),p.loc,p.seed,keep);p.items.forEach(it=>{if(keep[it.slot]===it.id)it.locked=true});save();render()}
-function swapItem(i){const p=curPlan(),it=p.items[i];const opts=swapOptions(p.type,U(),p.loc,it.slot,p.items.map(x=>x.id)).slice(0,40);
+function fitPlanSize(p,n){
+  n=Math.max(4,Math.min(10,n));
+  if(p.items.length>n)p.items=p.items.slice(0,n);
+  if(p.items.length<n)p.items.push(...extraPlanItems(p.type,U(),p.loc,p.items.map(x=>x.id),n-p.items.length));
+  p.targetCount=n;return p.items.length;
+}
+function planSizeSheet(){const p=curPlan(),now=p.items.length;
+  sheet(`<div class="h2">Workout size</div><p class="muted" style="font-size:13px;margin:5px 0 14px">Choose how many exercises you want for this day. Added movements match your split and can still be swapped.</p>
+   <div class="chips" style="flex-wrap:wrap">${[4,5,6,7,8,9,10].map(n=>`<button class="chip ${now===n?'on':''}" onclick="setPlanSize(${n})">${n} exercises</button>`).join('')}</div>
+   <p class="dim" style="font-size:12px;margin:14px 2px 0">Your current workout has ${now} exercise${now===1?'':'s'}.</p>`)}
+function setPlanSize(n){const p=curPlan(),got=fitPlanSize(p,n);save();closeSheet();render();toast(got===n?`${n} exercises set for today`:`Added every available match (${got} exercises)`)}
+function reroll(){const p=curPlan(),target=p.targetCount||p.items.length,keptExtras=p.items.filter(it=>it.extra&&it.locked);p.seed=(p.seed||0)+1+Math.floor(Math.random()*1000);const keep={};p.items.forEach(it=>{if(it.locked&&it.slot>=0)keep[it.slot]=it.id});
+  p.items=genDay(p.type,U(),p.loc,p.seed,keep);p.items.forEach(it=>{if(keep[it.slot]===it.id)it.locked=true});p.items.push(...keptExtras.filter(it=>!p.items.some(x=>x.id===it.id)));fitPlanSize(p,target);save();render()}
+function itemSwapOptions(type,loc,it,items){
+  const used=items.filter(x=>x!==it).map(x=>x.id);
+  if(!it.extra)return swapOptions(type,U(),loc,it.slot,used);
+  return EXL.filter(e=>(loc!=='home'||e.home)&&!used.includes(e.id)&&(e.m.includes(it.mus)||e.pat===it.pat)&&e.pat!=='cardio')
+    .sort((a,b)=>(b.staple-a.staple)||a.n.localeCompare(b.n));
+}
+function swapItem(i){const p=curPlan(),it=p.items[i];const opts=itemSwapOptions(p.type,p.loc,it,p.items).slice(0,40);
   sheet(`<div class="h2">Swap ${esc(EXI[it.id].n)}</div><p class="muted" style="font-size:13px;margin:4px 0 12px">Choose one of the recommendations or search the full exercise library.</p>
    <button class="btn" style="width:100%;margin-bottom:14px" onclick="openPicker('swap',${i})">${I('search',16)} Search all ${EXL.length} exercises</button>
    <div class="eyebrow" style="margin:0 2px 6px">Recommended swaps</div>
    ${opts.map(e=>`<button class="ex" onclick="doSwap(${i},'${e.id}')"><span class="t"><b>${e.n}</b><small>${e.eqName} · ${e.m.map(m=>MUSCLE_NAMES[m]).join(', ')}</small></span>${e.staple?'<span class="tag">Staple</span>':''}</button>`).join('')}`)}
-function doSwap(i,id){const p=curPlan();p.items[i].id=id;p.items[i].locked=true;save();closeSheet();render()}
+function doSwap(i,id){const p=curPlan(),it=p.items[i];it.id=id;if(it.extra){it.mus=EXI[id].m[0];it.pat=EXI[id].pat}it.locked=true;save();closeSheet();render()}
 
 /* ================= WORKOUT ================= */
 function startWorkout(){
   const p=planFor(Date.now());if(!p){toast('Rest day today');return}
-  S.active={t:Date.now(),type:p.type,ups:0,prs:0,items:p.items.map(it=>{const e=EXI[it.id],c=coach(e,it,lastFor(it.id),U(),S.lifts[it.id]?.rating);
-    return {id:it.id,lo:it.lo,hi:it.hi,backoffLo:it.backoffLo,backoffHi:it.backoffHi,style:it.style,coach:c,sets:[...Array(it.sets)].map((_,setIndex)=>{const backoff=it.style==='top-backoff'&&setIndex===1;return {w:e.type==='w'?(backoff?(c.backoffW??c.w):c.w):'',r:'',done:false,role:it.style==='top-backoff'?(backoff?'backoff':'top'):'work',target:backoff?(c.backoffR??it.backoffLo??it.lo):c.r}})}})};
+  S.active={t:Date.now(),type:p.type,loc:p.loc,ups:0,prs:0,items:p.items.map(it=>{const e=EXI[it.id],c=coach(e,it,lastFor(it.id),U(),S.lifts[it.id]?.rating);
+    return {id:it.id,slot:it.slot,extra:it.extra,mus:it.mus,pat:it.pat,lo:it.lo,hi:it.hi,backoffLo:it.backoffLo,backoffHi:it.backoffHi,style:it.style,coach:c,sets:[...Array(it.sets)].map((_,setIndex)=>{const backoff=it.style==='top-backoff'&&setIndex===1;return {w:e.type==='w'?(backoff?(c.backoffW??c.w):c.w):'',r:'',done:false,role:it.style==='top-backoff'?(backoff?'backoff':'top'):'work',target:backoff?(c.backoffR??it.backoffLo??it.lo):c.r}})}})};
   save();render();
 }
 function workoutView(){
@@ -522,7 +540,7 @@ function exCard(it,i){
   const range=it.style==='top-backoff'?`Top ${it.lo}–${it.hi} · back-off ${it.backoffLo||it.lo}–${it.backoffHi||it.hi}`:`${it.lo}–${it.hi}`;
   return `<div class="card" id="ex${i}">
    <div class="between"><button class="row" style="text-align:left;min-width:0" onclick="exSheet('${e.id}')">${rf?fx(rf.rank,42):`<span class="ibtn">${I('dumbbell',18)}</span>`}<span style="min-width:0"><b style="font-size:16px;display:block">${e.n}</b><small class="muted" style="font-size:12px">${range} ${rl} · ${rf?`<span style="color:${rf.rank.hex}">${rf.rank.name} ${rf.div}</span>`:'Unranked'}</small></span></button>
-     <button class="ibtn" onclick="exSheet('${e.id}')">${I('info',18)}</button></div>
+     <button class="ibtn" onclick="exSheet('${e.id}')" aria-label="Exercise details">${I('info',18)}</button></div>
    <div class="coach sm" style="margin-top:12px"><img src="${COACH_IMG}" alt=""><div class="bubble">${msg}</div></div>
    <div class="hint">${I('crown',15)}<span>${rating?`Next rank: <span style="color:${h.nr.rank.hex}">${h.nr.rank.name} ${h.nr.div}</span> at <b>${h.txt}</b>`:'Finish a set to get your first rank on this lift'}</span></div>
    <div class="sethead"><span>SET</span><span>${e.type==='w'?(e.eq==='wb'?'+LB':'LB'):''}</span><span>${rl.toUpperCase()}</span><span></span></div>
@@ -530,8 +548,19 @@ function exCard(it,i){
      <input type="number" inputmode="decimal" value="${e.type==='w'?s.w:''}" ${e.type==='w'?'':'disabled placeholder="BW"'} onchange="S.active.items[${i}].sets[${j}].w=this.value;save()">
      <input type="number" inputmode="numeric" value="${s.r}" placeholder="${s.target||it.coach.r||it.lo}" onchange="S.active.items[${i}].sets[${j}].r=this.value;save()">
      <button class="ok" onclick="doneSet(${i},${j},this)" aria-label="Done">${I('check',20)}</button></div>`).join('')}
-   <button class="chip" style="width:100%;margin-top:10px" onclick="S.active.items[${i}].sets.push({w:S.active.items[${i}].sets.at(-1).w,r:'',done:false});save();render()">${I('plus',14)} Add set</button></div>`;
+   <div class="row" style="gap:8px;margin-top:10px"><button class="chip" style="flex:1" onclick="activeSwapItem(${i})">${I('swap',14)} Replace exercise</button><button class="chip" style="flex:1" onclick="S.active.items[${i}].sets.push({w:S.active.items[${i}].sets.at(-1).w,r:'',done:false});save();render()">${I('plus',14)} Add set</button></div></div>`;
 }
+function activeSwapItem(i){const a=S.active,it=a?.items[i];if(!it)return;
+  if(it.sets.some(s=>s.done)){sheet(`<div class="h2">This exercise is already logged</div><p class="muted" style="font-size:13px;margin-top:8px">Its completed sets stay attached to this exercise. Replace a movement before you log a set so your workout history stays accurate.</p><button class="btn" style="margin-top:16px" onclick="closeSheet()">Got it</button>`);return}
+  const opts=itemSwapOptions(a.type,a.loc||S.loc,it,a.items).slice(0,40);
+  sheet(`<div class="h2">Replace ${esc(EXI[it.id].n)}</div><p class="muted" style="font-size:13px;margin:4px 0 12px">Machine taken? Choose a recommendation or search every exercise. Your new movement gets its own suggested weight.</p>
+   <button class="btn" style="width:100%;margin-bottom:14px" onclick="openPicker('activeSwap',${i})">${I('search',16)} Search all ${EXL.length} exercises</button>
+   <div class="eyebrow" style="margin:0 2px 6px">Recommended replacements</div>
+   ${opts.map(e=>`<button class="ex" onclick="activeReplace(${i},'${e.id}')"><span class="t"><b>${e.n}</b><small>${e.eqName} · ${e.m.map(m=>MUSCLE_NAMES[m]).join(', ')}</small></span>${e.staple?'<span class="tag">Staple</span>':''}</button>`).join('')||'<p class="muted">No close matches found. Search the full library instead.</p>'}`)}
+function activeReplace(i,id){const a=S.active,it=a?.items[i],e=EXI[id];if(!it||!e||it.sets.some(s=>s.done))return;
+  const c=coach(e,it,lastFor(id),U(),S.lifts[id]?.rating);it.id=id;it.coach=c;
+  it.sets=it.sets.map((s,j)=>{const backoff=it.style==='top-backoff'&&(s.role==='backoff'||j===1);return {w:e.type==='w'?(backoff?(c.backoffW??c.w):c.w):'',r:'',done:false,role:s.role||((it.style==='top-backoff')?(backoff?'backoff':'top'):'work'),target:backoff?(c.backoffR??it.backoffLo??it.lo):c.r}});
+  S._page=null;S._pick=null;save();closeSheet();render();toast(`${e.n} added to this workout`)}
 function doneSet(i,j,btn){
   const it=S.active.items[i],s=it.sets[j],e=EXI[it.id],ins=btn.closest('.set').querySelectorAll('input');
   const keepScroll=()=>{const y=$('#wbody')?.scrollTop||0;render();const b=$('#wbody');if(b)b.scrollTop=y};
@@ -751,7 +780,7 @@ function pickerBody(){const p=S._pick,L=pickFiltered();let last='',list='';
   if(p.sort==='az')for(const e of L){const c=e.n[0].toUpperCase();if(c!==last){last=c;list+=`<div class="eyebrow" style="margin:12px 4px 6px">${c}</div>`}list+=pickRow(e)}else list=L.map(pickRow).join('');
   const recent=!p.q&&!p.eq.length&&!p.mus.length?[...new Set([...S.history].reverse().map(h=>h.ex))].slice(0,4).map(id=>EXI[id]).filter(Boolean):[];
   return `${recent.length?`<div class="eyebrow" style="margin:4px 4px 6px">Recent exercises</div>${recent.map(pickRow).join('')}<div class="eyebrow" style="margin:16px 4px 0">All exercises · ${L.length}</div>`:`<div class="eyebrow" style="margin:4px 4px 0">${L.length} exercises</div>`}${list||'<p class="muted" style="padding:20px 4px">No exercises match.</p>'}`}
-function pickerView(){const p=S._pick,title=p.ctx==='swap'?'Choose exercise':'Add exercise';
+function pickerView(){const p=S._pick,title=p.ctx==='swap'?'Choose exercise':p.ctx==='activeSwap'?'Replace exercise':'Add exercise';
   return `<div class="top"><button class="ibtn" onclick="S._page=null;render()">${I('left')}</button><div class="h2">${title}</div><span style="width:38px"></span></div>
    <div style="padding:0 18px 10px"><div class="field" style="margin-bottom:10px">${I('search',18)}<input id="pq" style="width:100%;text-align:left" placeholder="Search exercise" value="${esc(p.q)}" oninput="S._pick.q=this.value;$('#plist').innerHTML=pickerBody();GodFX.scan($('#plist'))" autocomplete="off"></div>
     <div class="row" style="gap:8px"><button class="chip ${p.eq.length?'on':''}" style="flex:1" onclick="eqSheet()">${I('dumbbell',15)} Equipment${p.eq.length?' · '+p.eq.length:''}</button><button class="chip ${p.mus.length?'on':''}" style="flex:1" onclick="musSheet()">${I('target',15)} Muscle${p.mus.length?' · '+p.mus.length:''}</button>
@@ -759,7 +788,8 @@ function pickerView(){const p=S._pick,title=p.ctx==='swap'?'Choose exercise':'Ad
     <div class="dim" style="font-size:11px;font-weight:700;margin-top:6px">Sorted ${p.sort==='az'?'A–Z':'by rank'}</div></div>
    <div class="body" id="plist">${pickerBody()}</div>`}
 function pickChoose(id){const p=S._pick;if(p.ctx==='calc'){S._cx=id;S._cw=null;S._cr=null;S._cxw=null;S._page=null;S.tab='ranks';S._sub='calc';render();return}
-  if(p.ctx==='swap'&&Number.isInteger(p.swapIndex)){S._page=null;S._pick=null;doSwap(p.swapIndex,id)}}
+  if(p.ctx==='swap'&&Number.isInteger(p.swapIndex)){S._page=null;S._pick=null;doSwap(p.swapIndex,id)}
+  if(p.ctx==='activeSwap'&&Number.isInteger(p.swapIndex))activeReplace(p.swapIndex,id)}
 function tglIn(arr,v){const i=arr.indexOf(v);i<0?arr.push(v):arr.splice(i,1)}
 function filterFoot(){const n=pickFiltered().length;return `<button class="btn" style="margin-top:14px" onclick="closeSheet();render()">Show ${n} results</button><button class="btn ghost" style="margin-top:10px" onclick="S._pick.eq=[];S._pick.mus=[];closeSheet();render()">Clear filters</button>`}
 function eqSheet(){const p=S._pick;sheet(`<div class="h2" style="text-align:center;margin-bottom:14px">Equipment</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">${EQCAT.map(([k,l,eqs,ic,ph])=>`<button class="opt ${p.eq.includes(k)?'on':''}" style="margin:0;padding:8px;gap:10px" onclick="tglIn(S._pick.eq,'${k}');eqSheet()">${eqTile(k,52)}<span style="flex:1;font-weight:700;font-size:14px">${l}<small class="muted" style="font-size:11px">${EXL.filter(e=>eqs.includes(e.eq)).length}</small></span></button>`).join('')}</div>${filterFoot()}`)}
@@ -920,6 +950,12 @@ function newGoal(type){const opts=EXL.filter(e=>e.staple&&e.type==='w').map(e=>`
 function commitGoal(type){const t=+$('#gt').value;if(!(t>0)){toast('Enter a target');return}const d=+($('#gd')?.value||0);
   const g={type,target:t,deadline:d>0?Date.now()+d*DAYMS:null,main:!S.goals.length};if(type==='strength')g.ex=$('#gex').value;if(type==='bodyweight'){g.start=+S.bw;S.target=t}
   S.goals.push(g);save();closeSheet();toast('Goal set');render()}
+async function updateApp(){const b=$('#updateApp');if(b){b.disabled=true;b.innerHTML=`${I('download',18)} Checking for updates…`}
+  try{if('serviceWorker' in navigator&&isSecureContext){const reg=await navigator.serviceWorker.getRegistration();if(reg)await reg.update()}}catch(e){}
+  // The service worker uses network-first requests. A cache-busting reload also
+  // refreshes the page when the app was opened as a phone home-screen shortcut.
+  const next=new URL(location.href);next.searchParams.set('updated',Date.now());location.replace(next.toString());
+}
 function pageView(){
   const p=S._page,title={streak:'Streaks',quests:'Quests',medals:'Medals',goals:'Goals',health:'Health log',library:'Exercise library',settings:'Settings'}[p];let b='';
   if(p==='settings'){const ft=[4,5,6,7].map(v=>`<option ${S.heightFt==v?'selected':''}>${v}</option>`).join(''),inch=[...Array(12).keys()].map(v=>`<option ${S.heightIn==v?'selected':''}>${v}</option>`).join('');
@@ -939,6 +975,9 @@ function pageView(){
      ${remindersCard()}
      <div class="eyebrow" style="margin:18px 0 8px">Look</div>
      <div class="field"><label>Void background</label><button onclick="S.voidOff=!S.voidOff;VoidBG.set(!S.voidOff);save();render()" style="width:52px;height:30px;border-radius:999px;position:relative;background:${!S.voidOff?'linear-gradient(135deg,#9ad3ff,#5b8dff)':'#2a2438'}"><span style="position:absolute;top:3px;${!S.voidOff?'right:3px':'left:3px'};width:24px;height:24px;border-radius:50%;background:#fff"></span></button></div>
+     <div class="eyebrow" style="margin:18px 0 8px">App</div>
+     <button id="updateApp" class="btn ghost" onclick="updateApp()">${I('download',18)} Check for updates</button>
+     <p class="dim" style="font-size:12px;margin:8px 2px 0">Gets the newest version without removing your home-screen app.</p>
      <button class="btn ghost" style="margin-top:24px;color:var(--bad)" onclick="if(confirm('Erase everything and start over?')){localStorage.removeItem('godrank2');S=load();render()}">${I('trash',16)} Reset app</button>`}
   if(p==='streak')b=streakPage();
   if(p==='quests'){const row=q=>{const done=S.claimed[qKey(q)];return `<div class="ex"><span class="ibtn">${I(q.ic,18)}</span><span class="t"><b>${q.t}</b><small>${q.d} · +${q.xp} XP · +${q.g} gems</small><div class="bar" style="height:5px;margin-top:6px"><i style="width:${q.p/q.n*100}%"></i></div></span><button class="btn sm ${q.p>=q.n&&!done?'':'ghost'}" style="padding:8px 12px;font-size:12px" ${q.p>=q.n&&!done?`onclick="claimQuest('${q.id}')"`:'disabled'}>${done?'Done':'Claim'}</button></div>`};
@@ -983,7 +1022,7 @@ function render(){
   // the lava in the background glows in your current god-rank color
   {const o=overall();VoidBG.color(o?rankFor(o).rank.hex:'#ff5a2a');VoidBG.level(bodyStrength())}
   if(!S.setup){root.innerHTML=setupView();GodFX.scan(root);return}
-  if(S.active){root.innerHTML=workoutView()+coachEl();GodFX.scan(root);return}
+  if(S.active&&S._page!=='picker'){root.innerHTML=workoutView()+coachEl();GodFX.scan(root);return}
   const tab=S.tab||'home',view=S._page==='picker'?pickerView():{home:homeView,plan:planView,ranks:ranksView,profile:profileView}[tab]();
   const key=tab+(S._page||''),anim=key!==render.last?'fade':'';render.last=key;
   root.innerHTML=`<div class="screen ${anim}">${view}<nav class="tabbar">${[['home','home','Home'],['plan','plan','Plan'],['ranks','trophy','Ranks'],['profile','user','Profile']].map(([k,ic,l])=>`<button class="${tab===k?'on':''}" onclick="S.tab='${k}';S._page=null;${k==='plan'?'S._sel=null;':''}save();render()">${I(ic,22)}${l}</button>`).join('')}</nav>${coachEl()}</div>`;
