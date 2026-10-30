@@ -44,7 +44,7 @@ Low-to-High Cable Fly|cb|fly|chest,shoulders|x.9
 Single-Arm Cable Fly|cb|fly|chest|x.6
 Cable Crossover|cb|fly|chest
 Pec Deck|mc|fly|chest|*
-Technogym Chest Press|mc|hpress|chest,triceps,shoulders|*
+Technogym Standing Chest Fly|mc|fly|chest|*
 Band Fly|bd|fly|chest
 Svend Press|pl|fly|chest|x.8
 Plate Squeeze Press|pl|fly|chest|x.8
