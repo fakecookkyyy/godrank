@@ -258,6 +258,7 @@ Tate Press|db|triext|triceps|x.8
 Bench Dip|bw|dip|triceps|x1.6
 Diamond Push-Up|bw|pushup|triceps,chest|* x.7
 Triceps Dip|bw|dip|triceps,chest|*
+Weighted Triceps Dip|wb|dip|triceps,chest|*
 Machine Triceps Extension|mc|triext|triceps|*
 Close-Grip Push-Up|bw|pushup|triceps,chest|x.8
 Band Pushdown|bd|triext|triceps
