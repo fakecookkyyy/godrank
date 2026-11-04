@@ -206,7 +206,7 @@ svg.i{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.8;stro
 <script>
 /* ================= state ================= */
 const DEF={setup:false,step:0,name:'',sex:'m',heightFt:5,heightIn:8,bw:165,age:25,goal:'lean',target:150,exp:'int',days:[1,2,4,5],loc:'gym',
-  lifts:{},history:[],sessions:[],last:{},splitIdx:0,plans:{},active:null,skipped:{},
+  lifts:{},history:[],sessions:[],last:{},splitIdx:0,plans:{},active:null,skipped:{},overrides:{},
   health:[],goals:[],claimed:{},questsDone:0,xp:0,level:1,claimedLv:1,gems:0,prs:0,seat:null,seatTitle:'',tab:'home'};
 let S=load();
 function load(){const d=JSON.parse(JSON.stringify(DEF));try{return Object.assign(d,JSON.parse(localStorage.getItem('godrank2')||'{}'))}catch(e){return d}}
@@ -307,6 +307,7 @@ const split=()=>splitFor(U());
 function typeForDate(t){
   t=sod(t);const done=S.sessions.find(s=>sod(s.t)===t);if(done)return done.type;
   if(S.skipped?.[dkey(t)])return null;
+  if(S.overrides?.[dkey(t)])return S.overrides[dkey(t)];
   if(!S.days.includes(new Date(t).getDay()))return null;
   const today=sod(Date.now());if(t<today)return null;
   // A deliberate skip holds today's workout for the next selected training day.
@@ -486,6 +487,7 @@ function planView(){
             <button class="ibtn ${it.locked?'on':''}" onclick="lockItem(${i})" aria-label="Lock">${I(it.locked?'lock':'unlock',17)}</button><button class="ibtn" onclick="swapItem(${i})" aria-label="Swap">${I('swap',17)}</button></div>`}).join('')}
         <div class="row" style="margin-top:12px"><button class="btn ghost" style="flex:1" onclick="reroll()">${I('dice',18)} Randomize</button>
           <button class="btn" style="flex:1.3" ${sel!==today?'disabled':''} onclick="startWorkout()">${sel===today?'Continue':'Opens '+WD[new Date(sel).getDay()]}</button></div>
+        <button class="chip" style="width:100%;margin-top:10px" onclick="dayTypeSheet(${sel})">${I('swap',15)} Change this day · ${DAYNAME[p.type]}</button>
         ${sel===today?`<button class="chip" style="width:100%;margin-top:10px" onclick="skipToday()">${I('right',15)} Skip today · keep this workout next</button>`:''}
         <button class="chip" style="width:100%;margin-top:10px" onclick="planSizeSheet()">${I('plus',15)} Adjust workout size</button>
         <p class="dim" style="font-size:12px;text-align:center;margin-top:10px">Lock the ones you like, then roll the dice for the rest.</p>`;
@@ -500,6 +502,13 @@ function skipToday(){const p=planFor(Date.now());if(!p){toast('Nothing scheduled
   sheet(`<div class="h2">Skip ${DAYNAME[p.type]}?</div><p class="muted" style="font-size:13px;margin:7px 0 16px">This keeps your ${DAYNAME[p.type]} workout next in line for your next selected training day. It will not change your weekly schedule or advance the split.</p><button class="btn" onclick="confirmSkipToday('${p.type}')">Skip & move workout</button><button class="btn ghost" style="margin-top:10px" onclick="closeSheet()">Keep it today</button>`)}
 function confirmSkipToday(type){S.skipped||(S.skipped={});S.skipped[dkey(Date.now())]={type,t:Date.now()};save();closeSheet();render();toast(`${DAYNAME[type]} moved to your next training day`)}
 function undoSkipToday(){delete S.skipped?.[dkey(Date.now())];save();render();toast('Today’s workout restored')}
+const DAY_TYPES=[['upper','Upper Body'],['legs','Legs'],['armsDelts','Arms & Delts']];
+function dayTypeSheet(t){const day=sod(t),key=dkey(day),current=typeForDate(day),override=S.overrides?.[key];if(!current){toast('Undo the skip before changing this day');return}
+  sheet(`<div class="h2">Change this day</div><p class="muted" style="font-size:13px;margin:6px 0 14px">Choose the workout for ${new Date(day).toLocaleDateString(undefined,{weekday:'long',month:'short',day:'numeric'})}. This changes this date only; your regular schedule stays the same.</p>
+   ${DAY_TYPES.map(([type,label])=>`<button class="opt ${current===type?'on':''}" onclick="setDayType(${day},'${type}')"><span class="ibtn">${I(type==='legs'?'flame':type==='armsDelts'?'dumbbell':'target',18)}</span><span style="flex:1"><b>${label}</b><small>${current===type?'Selected for this day':'Use this workout'}</small></span>${current===type?I('check',18):I('right',18)}</button>`).join('')}
+   ${override?`<button class="btn ghost" style="margin-top:8px" onclick="clearDayType(${day})">Use scheduled workout instead</button>`:''}`)}
+function setDayType(t,type){S.overrides||(S.overrides={});S.overrides[dkey(t)]=type;save();closeSheet();render();toast(`${DAYNAME[type]} set for this day`)}
+function clearDayType(t){delete S.overrides?.[dkey(t)];save();closeSheet();render();toast('Scheduled workout restored')}
 function setLoc(l){S.loc=l;save();render()}
 function lockItem(i){const p=curPlan();p.items[i].locked=!p.items[i].locked;save();render()}
 function fitPlanSize(p,n){
