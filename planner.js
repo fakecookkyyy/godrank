@@ -34,14 +34,14 @@ const SPLITS={
   3:['fullA','fullB','fullC'],
   3.5:['push','pull','legs'],
   4:['upper','lower','upper2','lower2'],
-  5:['push','pull','legs','upper','lower'],
+  5:['upper','legs','upper2','legs2','armsDelts'],
   6:['push','pull','legs','push2','pull2','legs2'],
   7:['push','pull','legs','push2','pull2','legs2','core'],
 };
-window.DAYNAME={push:'Push',push2:'Push',pull:'Pull',pull2:'Pull',legs:'Legs',legs2:'Legs',upper:'Upper Body',upper2:'Upper Body',lower:'Lower Body',lower2:'Lower Body',
+window.DAYNAME={push:'Push',push2:'Push',pull:'Pull',pull2:'Pull',legs:'Legs',legs2:'Legs',upper:'Upper Body',upper2:'Upper Body',lower:'Lower Body',lower2:'Lower Body',armsDelts:'Arms & Delts',
   fullA:'Full Body A',fullB:'Full Body B',fullC:'Full Body C',core:'Core & Conditioning'};
 window.splitFor=function(u){const n=Math.max(2,Math.min(7,(u.days||[]).length||3));return SPLITS[n===3&&u.exp==='adv'?3.5:n]};
-window.splitName=function(u){const s=splitFor(u);return s.includes('push')&&s.includes('upper')?'Push / Pull / Legs + Upper / Lower':s.includes('push')?'Push / Pull / Legs':s.includes('upper')?'Upper / Lower':'Full Body'};
+window.splitName=function(u){const s=splitFor(u);return s.includes('armsDelts')?'Upper / Legs + Arms & Delts':s.includes('push')&&s.includes('upper')?'Push / Pull / Legs + Upper / Lower':s.includes('push')?'Push / Pull / Legs':s.includes('upper')?'Upper / Lower':'Full Body'};
 
 /* slot = which movement fills this spot. heavy = the day's main lift */
 const S_=(pats,o={})=>({pats,...o});
@@ -54,6 +54,7 @@ const TEMPLATES={
   legs2:[S_(['hinge'],{mus:'hams',heavy:1}),S_(['squat','legpress'],{mus:'quads'}),S_(['hipthrust']),S_(['legext']),S_(['legcurl']),S_(['calf'])],
   upper:[S_(['hpress'],{mus:'chest',heavy:1}),S_(['row']),S_(['vpress']),S_(['vpull']),S_(['lateral','fly']),S_(['curl']),S_(['triext'])],
   upper2:[S_(['vpull'],{heavy:1}),S_(['hpress'],{mus:'chest'}),S_(['row']),S_(['vpress']),S_(['rear','lateral']),S_(['triext']),S_(['curl'])],
+  armsDelts:[S_(['vpress'],{heavy:1}),S_(['lateral']),S_(['rear']),S_(['curl']),S_(['triext']),S_(['curl','triext'])],
   lower:[S_(['squat'],{heavy:1,mus:'quads'}),S_(['hinge'],{mus:'hams'}),S_(['lunge','legpress']),S_(['legcurl']),S_(['calf']),S_(['abs','crunch'])],
   lower2:[S_(['hinge'],{heavy:1}),S_(['legpress','squat'],{mus:'quads'}),S_(['hipthrust']),S_(['legext']),S_(['calf']),S_(['abs','crunch'])],
   fullA:[S_(['squat'],{heavy:1,mus:'quads'}),S_(['hpress'],{mus:'chest'}),S_(['row']),S_(['lateral']),S_(['curl','triext']),S_(['abs','crunch'])],
