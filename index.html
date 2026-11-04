@@ -314,7 +314,7 @@ function typeForDate(t){
 }
 function planFor(t){
   const k=dkey(t),type=typeForDate(t);if(!type)return null;
-  const program=S.goal==='lean'?'lean-top-backoff-v1':'standard-v1';let p=S.plans[k];
+  const program=S.goal==='lean'?'lean-top-backoff-v2':'standard-v2';let p=S.plans[k];
   if(!p||p.type!==type||p.loc!==S.loc||p.program!==program){p={type,loc:S.loc,program,seed:0,items:genDay(type,U(),S.loc,0)};S.plans[k]=p;save()}
   return p;
 }
@@ -476,7 +476,7 @@ function planView(){
       b=`<div class="between" style="margin:4px 2px 12px"><div><div class="eyebrow">${new Date(sel).toLocaleDateString(undefined,{weekday:'long',month:'short',day:'numeric'})}</div><div class="h1" style="font-size:26px">${DAYNAME[p.type]}</div></div>
           <div class="seg" style="width:140px">${[['gym','Gym'],['home','Home']].map(([k,l])=>`<button class="${p.loc===k?'on':''}" onclick="setLoc('${k}')">${l}</button>`).join('')}</div></div>
         <div class="row" style="margin-bottom:12px;gap:8px;flex-wrap:wrap"><button class="pill" onclick="planSizeSheet()">${p.items.length} exercises ${I('gear',13)}</button><span class="pill">${tot} sets</span><span class="pill">${({lean:'Lean muscle',strength:'Strength',fat:'Fat loss',recomp:'Recomp'})[S.goal]}</span></div>
-        ${p.program==='lean-top-backoff-v1'?`<p class="dim" style="font-size:12px;line-height:1.45;margin:0 2px 12px">Each exercise starts with one hard 5–8-rep top set, followed by a lighter 6–8-rep back-off set. Keep form controlled; an extra back-off set is added only if your top set is below five reps.</p>`:''}
+        ${p.program==='lean-top-backoff-v2'?`<p class="dim" style="font-size:12px;line-height:1.45;margin:0 2px 12px">Each exercise starts with one hard 5–8-rep top set, followed by a lighter 6–8-rep back-off set. Keep form controlled; an extra back-off set is added only if your top set is below five reps.</p>`:''}
         ${p.items.map((it,i)=>{const e=EXI[it.id],c=coach(e,it,lastFor(it.id),U(),S.lifts[it.id]?.rating),r=S.lifts[it.id];const scheme=it.style==='top-backoff'?`Top ${it.lo}–${it.hi} · back-off ${it.backoffLo}–${it.backoffHi}`:`${it.sets} × ${it.lo}–${it.hi}`;
           return `<div class="ex"><button onclick="exSheet('${e.id}')" class="row" style="flex:1;min-width:0;text-align:left;gap:12px">${r?fx(rankFor(r.rating).rank,40):`<span class="ibtn" style="width:40px;height:40px">${I('dumbbell',18)}</span>`}
              <span class="t"><b>${e.n}</b><small>${scheme}${e.type==='time'?'s':''} · ${e.type==='w'?c.w+' lb':e.eqName}</small></span></button>
