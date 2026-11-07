@@ -462,7 +462,7 @@ function logWeight(){sheet(`<div class="h2">Log bodyweight</div><p class="muted"
 
 /* ================= PLAN ================= */
 function planView(){
-  const today=sod(Date.now()),ws=addDays(today,-new Date(today).getDay()),sel=S._sel??today;
+  const today=sod(Date.now()),sel=S._sel??today,ws=addDays(sel,-new Date(sel).getDay());
   const days=[...Array(7)].map((_,i)=>addDays(ws,i));
   const strip=days.map(t=>{const ty=typeForDate(t),done=S.sessions.find(s=>sod(s.t)===t),skipped=S.skipped?.[dkey(t)];
     return `<button class="wd ${ty?'train':'rest'} ${done?'done':''} ${t===sel?'sel':''}" onclick="S._sel=${t};render()"><span>${WD[new Date(t).getDay()]}</span><b>${new Date(t).getDate()}</b><i>${done?'Done':skipped?'Skip':ty?(DAYNAME[ty].split(' ')[0]):'Rest'}</i></button>`}).join('');
