@@ -317,7 +317,7 @@ function typeForDate(t){
 }
 function planFor(t){
   const k=dkey(t),type=typeForDate(t);if(!type)return null;
-  const program=S.goal==='lean'?'lean-top-backoff-v3':'standard-v3',saved=S.templates?.[type]?.program===program?S.templates[type]:null;let p=S.plans[k];
+  const program=S.goal==='lean'?'lean-top-backoff-v4':'standard-v4',saved=S.templates?.[type]?.program===program?S.templates[type]:null;let p=S.plans[k];
   if(!p||p.type!==type||p.loc!==S.loc||p.program!==program){p={type,loc:S.loc,program,seed:0,items:saved?JSON.parse(JSON.stringify(saved.items)):genDay(type,U(),S.loc,0),targetCount:saved?.targetCount};S.plans[k]=p;save()}
   return p;
 }
