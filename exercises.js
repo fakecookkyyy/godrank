@@ -116,6 +116,7 @@ Reverse-Grip Lat Pulldown|cb|vpull|back,biceps
 Neutral-Grip Lat Pulldown|cb|vpull|back,biceps|*
 Single-Arm Lat Pulldown|cb|vpull|back|x.5
 Machine Pulldown|mc|vpull|back,biceps
+Plate-Loaded Lat Pulldown|mc|vpull|back,biceps|*
 Band Lat Pulldown|bd|vpull|back,biceps
 Kneeling Single-Arm Pulldown|cb|vpull|back|x.5
 Towel Pull-Up|bw|vpull|back,forearms|x.6
