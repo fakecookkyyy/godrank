@@ -317,7 +317,9 @@ function typeForDate(t){
 }
 function planFor(t){
   const k=dkey(t),type=typeForDate(t);if(!type)return null;
-  const program=S.goal==='lean'?'lean-top-backoff-v4':'standard-v4',saved=S.templates?.[type]?.program===program?S.templates[type]:null;let p=S.plans[k];
+  const genericUpper=p=>(type==='upper'||type==='upper2')&&p?.items?.some(it=>['Barbell Bench Press','Overhead Press','Lat Pulldown'].includes(EXI[it.id]?.n));
+  const program=S.goal==='lean'?'lean-top-backoff-v5':'standard-v5',candidate=S.templates?.[type]?.program===program?S.templates[type]:null,saved=genericUpper(candidate)?null:candidate;let p=S.plans[k];
+  if(genericUpper(p))p=null;
   if(!p||p.type!==type||p.loc!==S.loc||p.program!==program){p={type,loc:S.loc,program,seed:0,items:saved?JSON.parse(JSON.stringify(saved.items)):genDay(type,U(),S.loc,0),targetCount:saved?.targetCount};S.plans[k]=p;save()}
   return p;
 }
@@ -395,7 +397,7 @@ function setupView(){
   let b='',cta=`<button class="btn" onclick="${next}">Continue</button>`;
   if(st==='welcome'){b=`<div style="flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;gap:18px">
       ${GodFX.html(RANKS[6],150)}<div><div class="h1" style="font-size:40px;letter-spacing:.06em">GODRANK</div><p class="muted" style="margin-top:8px;font-size:16px">Train like a god. Climb from North God<br>to Technique God, one set at a time.</p></div></div>`;
-    cta=`<button class="btn" onclick="${next}">Begin</button>`}
+    cta=`<button class="btn" onclick="${next}">Begin</button><label class="btn ghost" style="margin-top:10px;cursor:pointer">${I('upload',16)} Import saved data<input type="file" accept=".json,application/json" style="display:none" onchange="restore(this)"></label>`}
   if(st==='name')b=`<div class="h1">What should Rudeus call you?</div><p class="muted" style="margin:8px 0 22px">Your coach will use it.</p>
     <div class="field"><input id="nm" style="width:100%;text-align:left" placeholder="Your name" value="${esc(S.name)}" oninput="S.name=this.value;save()" maxlength="20" autocomplete="off"></div>`;
   if(st==='body'){const ft=[4,5,6,7].map(v=>`<option ${S.heightFt==v?'selected':''}>${v}</option>`).join(''),inch=[...Array(12).keys()].map(v=>`<option ${S.heightIn==v?'selected':''}>${v}</option>`).join('');
