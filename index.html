@@ -481,7 +481,7 @@ function planView(){
           <div class="seg" style="width:140px">${[['gym','Gym'],['home','Home']].map(([k,l])=>`<button class="${p.loc===k?'on':''}" onclick="setLoc('${k}')">${l}</button>`).join('')}</div></div>
         <div class="row" style="margin-bottom:12px;gap:8px;flex-wrap:wrap"><button class="pill" onclick="planSizeSheet()">${p.items.length} exercises ${I('gear',13)}</button><span class="pill">${tot} sets</span><span class="pill">${({lean:'Lean muscle',strength:'Strength',fat:'Fat loss',recomp:'Recomp'})[S.goal]}</span></div>
         ${p.program==='lean-top-backoff-v2'?`<p class="dim" style="font-size:12px;line-height:1.45;margin:0 2px 12px">Each exercise starts with one hard 5–8-rep top set, followed by a lighter 6–8-rep back-off set. Keep form controlled; an extra back-off set is added only if your top set is below five reps.</p>`:''}
-        ${p.items.map((it,i)=>{const e=EXI[it.id],c=coach(e,it,lastFor(it.id),U(),S.lifts[it.id]?.rating),r=S.lifts[it.id];const scheme=it.style==='top-backoff'?`Top ${it.lo}–${it.hi} · back-off ${it.backoffLo}–${it.backoffHi}`:`${it.sets} × ${it.lo}–${it.hi}`;
+        ${p.items.map((it,i)=>{const e=EXI[it.id],c=coach(e,it,lastFor(it.id),U(),S.lifts[it.id]?.rating),r=S.lifts[it.id];const scheme=it.style==='top-backoff'?`Top ${it.lo}–${it.hi} · back-off ${it.backoffLo}–${it.backoffHi}`:it.style==='shoulder-pump'?`${it.sets} × ${it.lo}–${it.hi} · last set close to failure`:`${it.sets} × ${it.lo}–${it.hi}`;
           return `<div class="ex"><button onclick="exSheet('${e.id}')" class="row" style="flex:1;min-width:0;text-align:left;gap:12px">${r?fx(rankFor(r.rating).rank,40):`<span class="ibtn" style="width:40px;height:40px">${I('dumbbell',18)}</span>`}
              <span class="t"><b>${e.n}</b><small>${scheme}${e.type==='time'?'s':''} · ${e.type==='w'?c.w+' lb':e.eqName}</small></span></button>
             <button class="ibtn ${it.locked?'on':''}" onclick="lockItem(${i})" aria-label="Lock">${I(it.locked?'lock':'unlock',17)}</button><button class="ibtn" onclick="swapItem(${i})" aria-label="Swap">${I('swap',17)}</button></div>`}).join('')}
@@ -563,7 +563,7 @@ function workoutView(){
 function exCard(it,i){
   const e=EXI[it.id],l=S.lifts[e.id],rating=l?.rating||0,reps=it.coach.r||it.lo,h=rankHint(e,rating,reps,U()),rf=rating?rankFor(rating):null,rl=e.type==='time'?'sec':'reps';
   const msg=it.coach.tag==='up'?it.coach.msg.replace(/^(Add \+\d+ lb today\.)/,'<b>$1</b>'):it.coach.msg;
-  const range=it.style==='top-backoff'?`Top ${it.lo}–${it.hi} · back-off ${it.backoffLo||it.lo}–${it.backoffHi||it.hi}`:`${it.lo}–${it.hi}`;
+  const range=it.style==='top-backoff'?`Top ${it.lo}–${it.hi} · back-off ${it.backoffLo||it.lo}–${it.backoffHi||it.hi}`:it.style==='shoulder-pump'?`${it.sets} sets · ${it.lo}–${it.hi} · last set close to failure`:`${it.lo}–${it.hi}`;
   return `<div class="card" id="ex${i}">
    <div class="between"><button class="row" style="text-align:left;min-width:0" onclick="exSheet('${e.id}')">${rf?fx(rf.rank,42):`<span class="ibtn">${I('dumbbell',18)}</span>`}<span style="min-width:0"><b style="font-size:16px;display:block">${e.n}</b><small class="muted" style="font-size:12px">${range} ${rl} · ${rf?`<span style="color:${rf.rank.hex}">${rf.rank.name} ${rf.div}</span>`:'Unranked'}</small></span></button>
      <button class="ibtn" onclick="exSheet('${e.id}')" aria-label="Exercise details">${I('info',18)}</button></div>
