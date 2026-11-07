@@ -52,8 +52,8 @@ const TEMPLATES={
   pull2:[S_(['hinge'],{mus:'back',heavy:1}),S_(['vpull']),S_(['row']),S_(['rear']),S_(['curl']),S_(['shrug'])],
   legs:[S_(['squat','legpress'],{heavy:1,mus:'quads'}),S_(['hinge'],{mus:'hams'}),S_(['lunge','legpress']),S_(['legcurl']),S_(['legext','hipthrust']),S_(['calf'])],
   legs2:[S_(['hinge'],{mus:'hams',heavy:1}),S_(['squat','legpress'],{mus:'quads'}),S_(['hipthrust']),S_(['legext']),S_(['legcurl']),S_(['calf'])],
-  upper:[S_(['hpress'],{mus:'chest',heavy:1}),S_(['row']),S_(['vpress']),S_(['vpull']),S_(['lateral'],{preferEq:'mc'}),S_(['curl']),S_(['triext'])],
-  upper2:[S_(['vpull'],{heavy:1}),S_(['hpress'],{mus:'chest'}),S_(['row']),S_(['vpress']),S_(['rear'],{preferEq:'mc'}),S_(['triext']),S_(['curl'])],
+  upper:[S_(['hpress'],{mus:'chest',heavy:1,pick:'Incline Dumbbell Press'}),S_(['fly'],{mus:'chest',pick:'Machine Standing Chest Fly'}),S_(['row'],{pick:'Barbell Row'}),S_(['vpull'],{pick:'Plate-Loaded Lat Pulldown'}),S_(['lateral'],{preferEq:'mc',pick:'Machine Lateral Raise'}),S_(['curl'],{pick:'Incline Dumbbell Curl'}),S_(['triext'],{pick:'Straight-Bar Pushdown'})],
+  upper2:[S_(['hpress'],{mus:'chest',heavy:1,pick:'Smith Machine Bench Press'}),S_(['dip'],{mus:'chest',pick:'Weighted Chest Dip'}),S_(['vpull'],{heavy:1,pick:'Weighted Pull-Up'}),S_(['vpull'],{pick:'Wide-Grip Lat Pulldown'}),S_(['rear'],{preferEq:'mc',pick:'Reverse Pec Deck'}),S_(['curl'],{pick:'Plate-Loaded Preacher Curl'}),S_(['triext'],{pick:'Smith Machine JM Press'})],
   armsDelts:[S_(['vpress'],{heavy:1}),S_(['lateral'],{preferEq:'mc'}),S_(['rear'],{preferEq:'mc'}),S_(['curl']),S_(['triext']),S_(['curl','triext'])],
   lower:[S_(['squat'],{heavy:1,mus:'quads'}),S_(['hinge'],{mus:'hams'}),S_(['lunge','legpress']),S_(['legcurl']),S_(['calf']),S_(['abs','crunch'])],
   lower2:[S_(['hinge'],{heavy:1}),S_(['legpress','squat'],{mus:'quads'}),S_(['hipthrust']),S_(['legext']),S_(['calf']),S_(['abs','crunch'])],
@@ -91,7 +91,7 @@ const PREF_HOME={db:6,kb:4,wb:3,bw:5,bd:3,pl:2,tm:2};
 // regressions only show up for beginners
 const EASY=/Assisted|Knee Push|Negative|Incline Push-Up|Wall Sit|Bodyweight Squat/;let beg=false;
 function candidates(slot,loc,used){
-  return EXL.filter(e=>slot.pats.includes(e.pat)&&(!slot.mus||e.m[0]===slot.mus)&&(loc!=='home'||e.home)&&!used.has(e.id)
+  return EXL.filter(e=>slot.pats.includes(e.pat)&&(!slot.mus||e.m[0]===slot.mus)&&(!slot.pick||e.n===slot.pick)&&(loc!=='home'||e.home)&&!used.has(e.id)
     &&!(slot.noTime&&e.type==='time')&&e.pat!=='cardio'&&!(slot.heavy&&e.type==='reps'&&loc==='gym')&&(beg||!EASY.test(e.n)));
 }
 function score(e,slot,loc){const p=(loc==='home'?PREF_HOME:PREF_GYM)[e.eq]||1;return p+(e.staple?6:0)+(slot.heavy&&e.kind==='compound'?2:0)+(slot.heavy&&['bb','tb'].includes(e.eq)&&loc==='gym'?3:0)+(slot.alt&&/Incline|Dip/.test(e.n)?5:0)+(slot.preferEq===e.eq?10:0)}
@@ -99,7 +99,7 @@ function score(e,slot,loc){const p=(loc==='home'?PREF_HOME:PREF_GYM)[e.eq]||1;re
 // Build a day. seed 0 = the sensible default (best staples). keep = {slotIndex: exerciseId} for locked picks
 window.genDay=function(type,u,loc,seed=0,keep={}){
   beg=u.exp==='beg';
-  const tpl=(TEMPLATES[type]||TEMPLATES.fullA).slice(0,u.exp==='beg'?5:6);
+  const limit=u.exp==='beg'?5:(type==='upper'||type==='upper2'?7:6),tpl=(TEMPLATES[type]||TEMPLATES.fullA).slice(0,limit);
   const used=new Set(Object.values(keep)),r=rng(seed*7919+type.length*31+1);
   const items=tpl.map((slot,i)=>{
     let ex=keep[i]&&EXI[keep[i]];

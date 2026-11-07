@@ -225,6 +225,7 @@ Incline Dumbbell Curl|db|curl|biceps|* x.85
 EZ-Bar Preacher Curl|ez|curl|biceps|* x.85
 Dumbbell Preacher Curl|db|curl|biceps|x.85
 Machine Preacher Curl|mc|curl|biceps
+Plate-Loaded Preacher Curl|mc|curl|biceps|*
 Spider Curl|db|curl|biceps|x.8
 Concentration Curl|db|curl|biceps|x.85
 Cable Curl|cb|curl|biceps|*
@@ -243,6 +244,7 @@ Strict Curl|bb|curl|biceps|x.9
 Reverse Curl|ez|curl|forearms,biceps|x.75
 Close-Grip Bench Press|bb|hpress|triceps,chest|* x.9
 JM Press|bb|triext|triceps|x1.6
+Smith Machine JM Press|sm|triext|triceps|x1.6
 EZ-Bar Skull Crusher|ez|triext|triceps|*
 Dumbbell Skull Crusher|db|triext|triceps
 Overhead Dumbbell Extension|db|triext|triceps|x1.4
