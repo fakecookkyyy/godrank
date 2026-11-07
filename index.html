@@ -474,7 +474,7 @@ function planView(){
   else if(past)b=`<div class="card muted">Nothing logged this day.</div>`;
   else{
     const p=planFor(sel);
-    if(!p)b=`<div class="card"><div class="h2">Rest day</div><p class="muted" style="margin-top:6px">Recovery is part of the plan. Next: ${nextTrainingLabel()}</p></div>`;
+    if(!p)b=`<div class="card"><div class="h2">Rest day</div><p class="muted" style="margin-top:6px">Recovery is part of the plan. Next: ${nextTrainingLabel()}</p><button class="chip" style="width:100%;margin-top:14px" onclick="dayTypeSheet(${sel})">${I('plus',15)} Plan a workout here</button></div>`;
     else{
       const tot=p.items.reduce((a,b)=>a+b.sets,0);
       b=`<div class="between" style="margin:4px 2px 12px"><div><div class="eyebrow">${new Date(sel).toLocaleDateString(undefined,{weekday:'long',month:'short',day:'numeric'})}</div><div class="h1" style="font-size:26px">${DAYNAME[p.type]}</div></div>
@@ -494,7 +494,7 @@ function planView(){
     }
   }
   const guide=S.goal==='lean'?`<button class="card" style="width:100%;text-align:left;margin-bottom:14px" onclick="leanProgramSheet()"><div class="between"><div><div class="eyebrow">New program guide</div><div class="h3" style="margin-top:3px">Top set → back-off set</div></div>${I('right',20)}</div><p class="muted" style="font-size:13px;margin-top:6px">See a personalized example before you train.</p></button>`:'';
-  return `<div class="top"><div><div class="eyebrow">${splitName(U())}</div><div class="h2">Your plan</div></div><button class="ibtn" onclick="S.tab='profile';S._page='settings';render()">${I('gear')}</button></div>
+  return `<div class="top"><div><div class="eyebrow">${splitName(U())}</div><div class="h2">Your plan</div></div><div class="row" style="gap:8px"><button class="ibtn" onclick="calendarSheet()" aria-label="Choose date">${I('cal')}</button><button class="ibtn" onclick="S.tab='profile';S._page='settings';render()">${I('gear')}</button></div></div>
    <div class="body">${guide}<div class="week" style="margin-bottom:16px">${strip}</div>${b}</div>`;
 }
 const curPlan=()=>planFor(S._sel??sod(Date.now()));
@@ -503,8 +503,11 @@ function skipToday(){const p=planFor(Date.now());if(!p){toast('Nothing scheduled
 function confirmSkipToday(type){S.skipped||(S.skipped={});S.skipped[dkey(Date.now())]={type,t:Date.now()};save();closeSheet();render();toast(`${DAYNAME[type]} moved to your next training day`)}
 function undoSkipToday(){delete S.skipped?.[dkey(Date.now())];save();render();toast('Today’s workout restored')}
 const DAY_TYPES=[['upper','Upper Body'],['legs','Legs'],['armsDelts','Arms & Delts']];
-function dayTypeSheet(t){const day=sod(t),key=dkey(day),current=typeForDate(day),override=S.overrides?.[key];if(!current){toast('Undo the skip before changing this day');return}
-  sheet(`<div class="h2">Change this day</div><p class="muted" style="font-size:13px;margin:6px 0 14px">Choose the workout for ${new Date(day).toLocaleDateString(undefined,{weekday:'long',month:'short',day:'numeric'})}. This changes this date only; your regular schedule stays the same.</p>
+function calendarSheet(){const today=sod(Date.now()),value=new Date(S._sel??today).toISOString().slice(0,10),min=new Date(today).toISOString().slice(0,10);
+  sheet(`<div class="h2">Plan a future workout</div><p class="muted" style="font-size:13px;margin:6px 0 14px">Pick any upcoming date, then choose Upper, Legs, or Arms & Delts and build the exercises before you go.</p><div class="field"><label>Date</label><input id="plan-date" type="date" min="${min}" value="${value}"></div><button class="btn" style="width:100%;margin-top:14px" onclick="openPlanDate()">Choose this day</button>`) }
+function openPlanDate(){const input=$('#plan-date');if(!input?.value)return;const t=sod(new Date(input.value+'T00:00:00'));if(t<sod(Date.now())){toast('Choose today or a future date');return}S._sel=t;S.tab='plan';closeSheet();render()}
+function dayTypeSheet(t){const day=sod(t),key=dkey(day),current=typeForDate(day),override=S.overrides?.[key];if(day<sod(Date.now())){toast('Choose today or a future date');return}if(S.skipped?.[key]){toast('Undo the skip before changing this day');return}
+  sheet(`<div class="h2">${current?'Change this day':'Plan a workout'}</div><p class="muted" style="font-size:13px;margin:6px 0 14px">Choose the workout for ${new Date(day).toLocaleDateString(undefined,{weekday:'long',month:'short',day:'numeric'})}. This changes this date only; your regular schedule stays the same.</p>
    ${DAY_TYPES.map(([type,label])=>`<button class="opt ${current===type?'on':''}" onclick="setDayType(${day},'${type}')"><span class="ibtn">${I(type==='legs'?'flame':type==='armsDelts'?'dumbbell':'target',18)}</span><span style="flex:1"><b>${label}</b><small>${current===type?'Selected for this day':'Use this workout'}</small></span>${current===type?I('check',18):I('right',18)}</button>`).join('')}
    ${override?`<button class="btn ghost" style="margin-top:8px" onclick="clearDayType(${day})">Use scheduled workout instead</button>`:''}`)}
 function setDayType(t,type){S.overrides||(S.overrides={});S.overrides[dkey(t)]=type;save();closeSheet();render();toast(`${DAYNAME[type]} set for this day`)}
