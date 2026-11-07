@@ -52,9 +52,9 @@ const TEMPLATES={
   pull2:[S_(['hinge'],{mus:'back',heavy:1}),S_(['vpull']),S_(['row']),S_(['rear']),S_(['curl']),S_(['shrug'])],
   legs:[S_(['squat','legpress'],{heavy:1,mus:'quads'}),S_(['hinge'],{mus:'hams'}),S_(['lunge','legpress']),S_(['legcurl']),S_(['legext','hipthrust']),S_(['calf'])],
   legs2:[S_(['hinge'],{mus:'hams',heavy:1}),S_(['squat','legpress'],{mus:'quads'}),S_(['hipthrust']),S_(['legext']),S_(['legcurl']),S_(['calf'])],
-  upper:[S_(['hpress'],{mus:'chest',heavy:1}),S_(['row']),S_(['vpress']),S_(['vpull']),S_(['lateral','fly']),S_(['curl']),S_(['triext'])],
-  upper2:[S_(['vpull'],{heavy:1}),S_(['hpress'],{mus:'chest'}),S_(['row']),S_(['vpress']),S_(['rear','lateral']),S_(['triext']),S_(['curl'])],
-  armsDelts:[S_(['vpress'],{heavy:1}),S_(['lateral']),S_(['rear']),S_(['curl']),S_(['triext']),S_(['curl','triext'])],
+  upper:[S_(['hpress'],{mus:'chest',heavy:1}),S_(['row']),S_(['vpress']),S_(['vpull']),S_(['lateral'],{preferEq:'mc'}),S_(['curl']),S_(['triext'])],
+  upper2:[S_(['vpull'],{heavy:1}),S_(['hpress'],{mus:'chest'}),S_(['row']),S_(['vpress']),S_(['rear'],{preferEq:'mc'}),S_(['triext']),S_(['curl'])],
+  armsDelts:[S_(['vpress'],{heavy:1}),S_(['lateral'],{preferEq:'mc'}),S_(['rear'],{preferEq:'mc'}),S_(['curl']),S_(['triext']),S_(['curl','triext'])],
   lower:[S_(['squat'],{heavy:1,mus:'quads'}),S_(['hinge'],{mus:'hams'}),S_(['lunge','legpress']),S_(['legcurl']),S_(['calf']),S_(['abs','crunch'])],
   lower2:[S_(['hinge'],{heavy:1}),S_(['legpress','squat'],{mus:'quads'}),S_(['hipthrust']),S_(['legext']),S_(['calf']),S_(['abs','crunch'])],
   fullA:[S_(['squat'],{heavy:1,mus:'quads'}),S_(['hpress'],{mus:'chest'}),S_(['row']),S_(['lateral']),S_(['curl','triext']),S_(['abs','crunch'])],
@@ -72,6 +72,9 @@ function prescription(slot,ex,u){
   // followed by one lighter back-off set. The workout view adds a third back-off
   // set only when the top set lands below the minimum rep target.
   if(g==='lean'){
+    // Side and rear delt isolation responds best to controlled, moderate-load work.
+    // Keep presses on the normal heavy top-set/back-off progression.
+    if(ex.m[0]==='shoulders'&&['lateral','rear'].includes(ex.pat))return {sets:3,lo:10,hi:20,style:'shoulder-pump'};
     if(ex.type==='time')return {sets:2,lo:20,hi:45,style:'top-backoff'};
     return {sets:2,lo:5,hi:8,backoffLo:6,backoffHi:8,style:'top-backoff'};
   }
@@ -91,7 +94,7 @@ function candidates(slot,loc,used){
   return EXL.filter(e=>slot.pats.includes(e.pat)&&(!slot.mus||e.m[0]===slot.mus)&&(loc!=='home'||e.home)&&!used.has(e.id)
     &&!(slot.noTime&&e.type==='time')&&e.pat!=='cardio'&&!(slot.heavy&&e.type==='reps'&&loc==='gym')&&(beg||!EASY.test(e.n)));
 }
-function score(e,slot,loc){const p=(loc==='home'?PREF_HOME:PREF_GYM)[e.eq]||1;return p+(e.staple?6:0)+(slot.heavy&&e.kind==='compound'?2:0)+(slot.heavy&&['bb','tb'].includes(e.eq)&&loc==='gym'?3:0)+(slot.alt&&/Incline|Dip/.test(e.n)?5:0)}
+function score(e,slot,loc){const p=(loc==='home'?PREF_HOME:PREF_GYM)[e.eq]||1;return p+(e.staple?6:0)+(slot.heavy&&e.kind==='compound'?2:0)+(slot.heavy&&['bb','tb'].includes(e.eq)&&loc==='gym'?3:0)+(slot.alt&&/Incline|Dip/.test(e.n)?5:0)+(slot.preferEq===e.eq?10:0)}
 
 // Build a day. seed 0 = the sensible default (best staples). keep = {slotIndex: exerciseId} for locked picks
 window.genDay=function(type,u,loc,seed=0,keep={}){
@@ -158,6 +161,16 @@ function backoffLoad(ex,w){return roundLoad(ex,w*.9)}
 // last = {sets:[{w,r}]} from the previous session of this exercise
 window.coach=function(ex,it,last,u,rating){
   const lo=it.lo,hi=it.hi;
+  if(it.style==='shoulder-pump'){
+    if(!last){
+      const R={beg:220,int:400,adv:560}[u.exp||'int'];let w=ex.type==='w'?needFor(ex,R,hi,u):0;w=ex.eq==='wb'?Math.max(0,round5(w)):round5(w*.75);
+      return {w,r:lo,msg:`Use a controlled medium weight for ${it.sets} sets of ${lo}–${hi}. Stop 0–2 reps shy of failure; only push the last set to failure when form stays clean.`,tag:'new',style:'shoulder-pump'};
+    }
+    if(ex.type!=='w'){const best=Math.max(...last.sets.map(s=>+s.r||0));return {w:0,r:Math.min(hi,Math.max(lo,best+1)),msg:`Controlled reps for ${lo}–${hi}. Beat ${best} clean reps; the final set can go to failure.`,tag:'reps',style:'shoulder-pump'};}
+    const top=Math.max(...last.sets.map(s=>+s.w||0)),work=last.sets.filter(s=>(+s.w||0)>=top),allTop=work.every(s=>(+s.r||0)>=hi),best=Math.max(...work.map(s=>+s.r||0));
+    if(allTop){const w=top+inc(ex);return {w,r:lo,msg:`Add +${inc(ex)} lb. Keep all reps controlled; take only the last set close to failure.`,tag:'up',style:'shoulder-pump'};}
+    return {w:top,r:Math.min(hi,Math.max(lo,best+1)),msg:`Use ${top} lb for ${lo}–${hi} controlled reps. Keep 0–2 reps in reserve, then push only the final set if your form stays clean.`,tag:'reps',style:'shoulder-pump'};
+  }
   if(it.style==='top-backoff'){
     if(ex.type!=='w'){
       if(!last)return {w:0,r:lo,backoffR:it.backoffLo||lo,msg:`Two hard sets today: aim for ${lo}–${hi} clean reps.`,tag:'new',style:'top-backoff'};
