@@ -319,7 +319,7 @@ function planFor(t){
   const k=dkey(t),type=typeForDate(t);if(!type)return null;
   const upperAnchor=sod(new Date(2026,10,1)),week=Math.floor((sod(t)-upperAnchor)/(DAYMS*7)),swap=((week%2)+2)%2===1,variant=(type==='upper'||type==='upper2')?(swap?(type==='upper'?'upper2':'upper'):type):type;
   const genericUpper=p=>(variant==='upper'||variant==='upper2')&&p?.items?.some(it=>['Barbell Bench Press','Overhead Press','Lat Pulldown'].includes(EXI[it.id]?.n));
-  const program=S.goal==='lean'?'lean-top-backoff-v6':'standard-v6',candidate=S.templates?.[variant]?.program===program?S.templates[variant]:null,saved=genericUpper(candidate)?null:candidate;let p=S.plans[k];
+  const program=S.goal==='lean'?'lean-top-backoff-v7':'standard-v7',candidate=S.templates?.[variant]?.program===program?S.templates[variant]:null,saved=genericUpper(candidate)?null:candidate;let p=S.plans[k];
   if(genericUpper(p))p=null;
   if(!p||p.type!==type||p.variant!==variant||p.loc!==S.loc||p.program!==program){p={type,variant,loc:S.loc,program,seed:0,items:saved?JSON.parse(JSON.stringify(saved.items)):genDay(variant,U(),S.loc,0),targetCount:saved?.targetCount};S.plans[k]=p;save()}
   return p;
@@ -487,7 +487,7 @@ function planView(){
         ${p.program==='lean-top-backoff-v2'?`<p class="dim" style="font-size:12px;line-height:1.45;margin:0 2px 12px">Each exercise starts with one hard 5–8-rep top set, followed by a lighter 6–8-rep back-off set. Keep form controlled; an extra back-off set is added only if your top set is below five reps.</p>`:''}
         ${p.items.map((it,i)=>{const e=EXI[it.id],c=coach(e,it,lastFor(it.id),U(),S.lifts[it.id]?.rating),r=S.lifts[it.id];const scheme=it.style==='top-backoff'?`Top ${it.lo}–${it.hi} · back-off ${it.backoffLo}–${it.backoffHi}`:it.style==='shoulder-pump'?`${it.sets} × ${it.lo}–${it.hi} · last set close to failure`:`${it.sets} × ${it.lo}–${it.hi}`;
           return `<div class="ex"><button onclick="exSheet('${e.id}')" class="row" style="flex:1;min-width:0;text-align:left;gap:12px">${r?fx(rankFor(r.rating).rank,40):`<span class="ibtn" style="width:40px;height:40px">${I('dumbbell',18)}</span>`}
-             <span class="t"><b>${e.n}</b><small>${scheme}${e.type==='time'?'s':''} · ${e.type==='w'?c.w+' lb':e.eqName}</small></span></button>
+             <span class="t"><b>${e.n}</b><small>${it.focus?it.focus+' · ':''}${scheme}${e.type==='time'?'s':''} · ${e.type==='w'?c.w+' lb':e.eqName}</small></span></button>
             <button class="ibtn ${it.locked?'on':''}" onclick="lockItem(${i})" aria-label="Lock">${I(it.locked?'lock':'unlock',17)}</button><button class="ibtn" onclick="swapItem(${i})" aria-label="Swap">${I('swap',17)}</button></div>`}).join('')}
         <div class="row" style="margin-top:12px"><button class="btn ghost" style="flex:1" onclick="reroll()">${I('dice',18)} Randomize</button>
           <button class="btn" style="flex:1.3" ${sel!==today?'disabled':''} onclick="startWorkout()">${sel===today?'Continue':'Opens '+WD[new Date(sel).getDay()]}</button></div>
@@ -554,7 +554,7 @@ function doSwap(i,id){const p=curPlan(),it=p.items[i];it.id=id;if(it.extra){it.m
 function startWorkout(){
   const p=planFor(Date.now());if(!p){toast('Rest day today');return}
   S.active={t:Date.now(),type:p.type,loc:p.loc,ups:0,prs:0,items:p.items.map(it=>{const e=EXI[it.id],c=coach(e,it,lastFor(it.id),U(),S.lifts[it.id]?.rating);
-    return {id:it.id,slot:it.slot,extra:it.extra,mus:it.mus,pat:it.pat,lo:it.lo,hi:it.hi,backoffLo:it.backoffLo,backoffHi:it.backoffHi,style:it.style,coach:c,sets:[...Array(it.sets)].map((_,setIndex)=>{const backoff=it.style==='top-backoff'&&setIndex===1;return {w:e.type==='w'?(backoff?(c.backoffW??c.w):c.w):'',r:'',done:false,role:it.style==='top-backoff'?(backoff?'backoff':'top'):'work',target:backoff?(c.backoffR??it.backoffLo??it.lo):c.r}})}})};
+    return {id:it.id,slot:it.slot,extra:it.extra,mus:it.mus,pat:it.pat,focus:it.focus,lo:it.lo,hi:it.hi,backoffLo:it.backoffLo,backoffHi:it.backoffHi,style:it.style,coach:c,sets:[...Array(it.sets)].map((_,setIndex)=>{const backoff=it.style==='top-backoff'&&setIndex===1;return {w:e.type==='w'?(backoff?(c.backoffW??c.w):c.w):'',r:'',done:false,role:it.style==='top-backoff'?(backoff?'backoff':'top'):'work',target:backoff?(c.backoffR??it.backoffLo??it.lo):c.r}})}})};
   save();render();
 }
 function workoutView(){
@@ -570,7 +570,7 @@ function exCard(it,i){
   const range=it.style==='top-backoff'?`Top ${it.lo}–${it.hi} · back-off ${it.backoffLo||it.lo}–${it.backoffHi||it.hi}`:it.style==='shoulder-pump'?`${it.sets} sets · ${it.lo}–${it.hi} · last set close to failure`:`${it.lo}–${it.hi}`;
   return `<div class="card" id="ex${i}">
    <div class="between"><button class="row" style="text-align:left;min-width:0" onclick="exSheet('${e.id}')">${rf?fx(rf.rank,42):`<span class="ibtn">${I('dumbbell',18)}</span>`}<span style="min-width:0"><b style="font-size:16px;display:block">${e.n}</b><small class="muted" style="font-size:12px">${range} ${rl} · ${rf?`<span style="color:${rf.rank.hex}">${rf.rank.name} ${rf.div}</span>`:'Unranked'}</small></span></button>
-     <button class="ibtn" onclick="exSheet('${e.id}')" aria-label="Exercise details">${I('info',18)}</button></div>
+     <button class="ibtn" onclick="exSheet('${e.id}')" aria-label="Exercise details">${I('info',18)}</button></div>${it.focus?`<div class="eyebrow" style="margin-top:8px">Target: ${it.focus}</div>`:''}
    <div class="coach sm" style="margin-top:12px"><img src="${COACH_IMG}" alt=""><div class="bubble">${msg}</div></div>
    <div class="hint">${I('crown',15)}<span>${rating?`Next rank: <span style="color:${h.nr.rank.hex}">${h.nr.rank.name} ${h.nr.div}</span> at <b>${h.txt}</b>`:'Finish a set to get your first rank on this lift'}</span></div>
    <div class="sethead"><span>SET</span><span>${e.type==='w'?(e.eq==='wb'?'+LB':'LB'):''}</span><span>${rl.toUpperCase()}</span><span></span></div>
