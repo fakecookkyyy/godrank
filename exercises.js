@@ -76,6 +76,7 @@ Underhand Barbell Row|bb|row|back,biceps
 Seal Row|bb|row|back,biceps|x.85
 T-Bar Row|lm|row|back,biceps|*
 Chest-Supported T-Bar Row|mc|row|back,biceps
+Chest-Supported Tucked Row|mc|row|back,biceps|*
 One-Arm Dumbbell Row|db|row|back,biceps|*
 Chest-Supported Dumbbell Row|db|row|back,shoulders
 Kroc Row|db|row|back,biceps,forearms
@@ -177,6 +178,7 @@ Bradford Press|bb|vpress|shoulders|x.75
 Cuban Press|db|vpress|shoulders|x.45
 Dumbbell Lateral Raise|db|lateral|shoulders|*
 Cable Lateral Raise|cb|lateral|shoulders|*
+Cable Scapular-Plane Lateral Raise|cb|lateral|shoulders|*
 Single-Arm Cable Lateral Raise|cb|lateral|shoulders|x.55
 Machine Lateral Raise|mc|lateral|shoulders|*
 Lean-Away Lateral Raise|db|lateral|shoulders|x.9
@@ -255,6 +257,7 @@ Straight-Bar Pushdown|cb|triext|triceps|x1.15
 V-Bar Pushdown|cb|triext|triceps|x1.15
 Reverse-Grip Pushdown|cb|triext|triceps|x.85
 Single-Arm Cable Pushdown|cb|triext|triceps|x.55
+Single-Arm Underhand Cable Pushdown|cb|triext|triceps|x.55
 Dumbbell Kickback|db|triext|triceps|x.6
 Cable Kickback|cb|triext|triceps|x.5
 Tate Press|db|triext|triceps|x.8
