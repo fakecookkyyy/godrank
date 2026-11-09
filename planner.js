@@ -52,8 +52,8 @@ const TEMPLATES={
   pull2:[S_(['hinge'],{mus:'back',heavy:1}),S_(['vpull']),S_(['row']),S_(['rear']),S_(['curl']),S_(['shrug'])],
   legs:[S_(['squat','legpress'],{heavy:1,mus:'quads'}),S_(['hinge'],{mus:'hams'}),S_(['lunge','legpress']),S_(['legcurl']),S_(['legext','hipthrust']),S_(['calf'])],
   legs2:[S_(['hinge'],{mus:'hams',heavy:1}),S_(['squat','legpress'],{mus:'quads'}),S_(['hipthrust']),S_(['legext']),S_(['legcurl']),S_(['calf'])],
-  upper:[S_(['hpress'],{mus:'chest',heavy:1,pick:'Incline Dumbbell Press'}),S_(['fly'],{mus:'chest',pick:'Machine Standing Chest Fly'}),S_(['row'],{pick:'Barbell Row'}),S_(['vpull'],{pick:'Plate-Loaded Lat Pulldown'}),S_(['lateral'],{preferEq:'mc',pick:'Machine Lateral Raise'}),S_(['curl'],{pick:'Incline Dumbbell Curl'}),S_(['triext'],{pick:'Straight-Bar Pushdown'})],
-  upper2:[S_(['hpress'],{mus:'chest',heavy:1,pick:'Smith Machine Bench Press'}),S_(['dip'],{mus:'chest',pick:'Weighted Chest Dip'}),S_(['vpull'],{heavy:1,pick:'Weighted Pull-Up'}),S_(['vpull'],{pick:'Wide-Grip Lat Pulldown'}),S_(['rear'],{preferEq:'mc',pick:'Reverse Pec Deck'}),S_(['curl'],{pick:'Plate-Loaded Preacher Curl'}),S_(['triext'],{pick:'Smith Machine JM Press'})],
+  upper:[S_(['hpress'],{mus:'chest',heavy:1,pick:'Incline Dumbbell Press',focus:'Upper chest'}),S_(['fly'],{mus:'chest',pick:'Machine Standing Chest Fly',focus:'Chest adduction'}),S_(['row'],{pick:'Barbell Row',focus:'Lower-lat pull'}),S_(['vpull'],{pick:'Plate-Loaded Lat Pulldown',focus:'Upper-lat pull'}),S_(['lateral'],{preferEq:'mc',pick:'Machine Lateral Raise',focus:'Side delts'}),S_(['rear'],{preferEq:'mc',pick:'Reverse Pec Deck',focus:'Rear delts'}),S_(['curl'],{pick:'Incline Dumbbell Curl',focus:'Biceps brachii'}),S_(['curl'],{pick:'Hammer Curl',focus:'Brachialis'}),S_(['triext'],{pick:'Cable Overhead Extension',focus:'Triceps long head'}),S_(['triext'],{pick:'Straight-Bar Pushdown',focus:'Triceps medial & lateral'})],
+  upper2:[S_(['hpress'],{mus:'chest',heavy:1,pick:'Smith Machine Bench Press',focus:'Upper chest'}),S_(['dip'],{mus:'chest',pick:'Weighted Chest Dip',focus:'Chest pressing'}),S_(['vpull'],{heavy:1,pick:'Weighted Pull-Up',focus:'Lower-lat pull'}),S_(['vpull'],{pick:'Wide-Grip Lat Pulldown',focus:'Upper-lat pull'}),S_(['lateral'],{pick:'Cable Lateral Raise',focus:'Side delts'}),S_(['rear'],{pick:'Face Pull',focus:'Rear delts'}),S_(['curl'],{pick:'Plate-Loaded Preacher Curl',focus:'Biceps brachii'}),S_(['curl'],{pick:'Hammer Curl',focus:'Brachialis'}),S_(['triext'],{pick:'Cable Overhead Extension',focus:'Triceps long head'}),S_(['triext'],{pick:'Smith Machine JM Press',focus:'Triceps medial & lateral'})],
   armsDelts:[S_(['vpress'],{heavy:1}),S_(['lateral'],{preferEq:'mc'}),S_(['rear'],{preferEq:'mc'}),S_(['curl']),S_(['triext']),S_(['curl','triext'])],
   lower:[S_(['squat'],{heavy:1,mus:'quads'}),S_(['hinge'],{mus:'hams'}),S_(['lunge','legpress']),S_(['legcurl']),S_(['calf']),S_(['abs','crunch'])],
   lower2:[S_(['hinge'],{heavy:1}),S_(['legpress','squat'],{mus:'quads'}),S_(['hipthrust']),S_(['legext']),S_(['calf']),S_(['abs','crunch'])],
@@ -99,7 +99,7 @@ function score(e,slot,loc){const p=(loc==='home'?PREF_HOME:PREF_GYM)[e.eq]||1;re
 // Build a day. seed 0 = the sensible default (best staples). keep = {slotIndex: exerciseId} for locked picks
 window.genDay=function(type,u,loc,seed=0,keep={}){
   beg=u.exp==='beg';
-  const limit=u.exp==='beg'?5:(type==='upper'||type==='upper2'?7:6),tpl=(TEMPLATES[type]||TEMPLATES.fullA).slice(0,limit);
+  const limit=u.exp==='beg'?5:(type==='upper'||type==='upper2'?10:6),tpl=(TEMPLATES[type]||TEMPLATES.fullA).slice(0,limit);
   const used=new Set(Object.values(keep)),r=rng(seed*7919+type.length*31+1);
   const items=tpl.map((slot,i)=>{
     let ex=keep[i]&&EXI[keep[i]];
@@ -113,7 +113,7 @@ window.genDay=function(type,u,loc,seed=0,keep={}){
         ex=pool.find((e,j)=>(t-=w[j])<=0)||pool[0];}
     }
     used.add(ex.id);
-    return {id:ex.id,slot:i,locked:!!keep[i],...prescription(slot,ex,u)};
+    return {id:ex.id,slot:i,locked:!!keep[i],focus:slot.focus,...prescription(slot,ex,u)};
   }).filter(Boolean);
   // The lean-muscle plan deliberately stays at two work sets per exercise.
   // Other programs retain their existing 14-20 set volume guardrail.
