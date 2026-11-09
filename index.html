@@ -319,9 +319,9 @@ function planFor(t){
   const k=dkey(t),type=typeForDate(t);if(!type)return null;
   const upperAnchor=sod(new Date(2026,10,1)),week=Math.floor((sod(t)-upperAnchor)/(DAYMS*7)),swap=((week%2)+2)%2===1,variant=(type==='upper'||type==='upper2')?(swap?(type==='upper'?'upper2':'upper'):type):type;
   const genericUpper=p=>(variant==='upper'||variant==='upper2')&&p?.items?.some(it=>['Barbell Bench Press','Overhead Press','Lat Pulldown'].includes(EXI[it.id]?.n));
-  const program=S.goal==='lean'?'lean-top-backoff-v7':'standard-v7',candidate=S.templates?.[variant]?.program===program?S.templates[variant]:null,saved=genericUpper(candidate)?null:candidate;let p=S.plans[k];
+  const program=S.goal==='lean'?'lean-top-backoff-v8':'standard-v8',candidate=S.templates?.[variant]?.program===program?S.templates[variant]:null,saved=genericUpper(candidate)?null:candidate,seed=(type==='upper'||type==='upper2')?Math.floor(sod(t)/DAYMS):0;let p=S.plans[k];
   if(genericUpper(p))p=null;
-  if(!p||p.type!==type||p.variant!==variant||p.loc!==S.loc||p.program!==program){p={type,variant,loc:S.loc,program,seed:0,items:saved?JSON.parse(JSON.stringify(saved.items)):genDay(variant,U(),S.loc,0),targetCount:saved?.targetCount};S.plans[k]=p;save()}
+  if(!p||p.type!==type||p.variant!==variant||p.loc!==S.loc||p.program!==program){p={type,variant,loc:S.loc,program,seed,items:saved?JSON.parse(JSON.stringify(saved.items)):genDay(variant,U(),S.loc,seed),targetCount:saved?.targetCount};S.plans[k]=p;save()}
   return p;
 }
 function leanProgramSheet(){
