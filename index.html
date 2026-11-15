@@ -626,7 +626,7 @@ function finishWorkout(){
 
 /* ================= exercise sheet: how-to, rank, calculator ================= */
 function exSheet(id){
-  const e=EXI[id],l=S.lifts[id],rf=l?rankFor(l.rating):null,hist=S.history.filter(h=>h.ex===id).slice(-6).reverse();
+  const e=EXI[id],l=S.lifts[id],rf=l?rankFor(l.rating):null,hist=S.history.map((h,i)=>({...h,i})).filter(h=>h.ex===id).slice(-6).reverse();
   const pri=e.m[0],sec=new Set(e.m.slice(1));
     sheet(`<div class="between"><div><div class="eyebrow">${e.eqName} · ${e.kind}</div><div class="h2" style="margin-top:2px">${e.n}</div></div>${rf?fx(rf.rank,52):''}</div>
    <div class="illu" style="margin:12px auto 0;width:220px;height:220px;border-radius:24px">${exIllu(e,220)}</div>
@@ -638,10 +638,29 @@ function exSheet(id){
    <div class="h3" style="margin:16px 0 8px">Rank calculator</div>
    ${e.type==='w'?`<div class="field"><label>Weight</label><input id="rcw" type="number" inputmode="decimal" oninput="rcalc('${id}')"><span class="muted">lb</span></div>`:''}
    <div class="field"><label>${e.type==='time'?'Seconds':'Reps'}</label><input id="rcr" type="number" inputmode="numeric" oninput="rcalc('${id}')"></div><div id="rco" style="text-align:center;font-weight:800;min-height:22px"></div>
-   ${hist.length?`<div class="h3" style="margin:12px 0 6px">Recent sets</div>${hist.map(h=>`<div class="between" style="padding:7px 0;border-bottom:1px solid var(--line);font-size:13px"><span class="muted">${new Date(h.t).toLocaleDateString()}</span><span class="num">${h.w?h.w+' lb × ':''}${h.r}</span><span style="color:${rankFor(h.rating).rank.hex};font-weight:800">${h.rating}</span></div>`).join('')}`:''}`);
+   ${hist.length?`<div class="between" style="margin:12px 0 6px"><div class="h3">Recent sets</div><span class="muted" style="font-size:11px">Tap one to correct it</span></div>${hist.map(h=>`<button class="between" style="width:100%;padding:9px 2px;border-bottom:1px solid var(--line);font-size:13px;text-align:left" onclick="editRankedSet(${h.i})"><span class="muted">${new Date(h.t).toLocaleDateString()}</span><span class="num">${h.w?h.w+' lb × ':''}${h.r}</span><span style="color:${rankFor(h.rating).rank.hex};font-weight:800">${h.rating}</span>${I('gear',15)}</button>`).join('')}`:''}`);
 }
 function rcalc(id){const e=EXI[id],w=+($('#rcw')?.value||0),r=+($('#rcr').value||0);if(!r||(e.type==='w'&&!w&&e.eq!=='wb')){$('#rco').textContent='';return}
   const x=rate(e,w,r,U()),rf=rankFor(x);$('#rco').innerHTML=`<span style="color:${rf.rank.hex}">${rf.rank.name} ${rf.div}</span> <span class="muted">· rating ${x}</span>`}
+function editRankedSet(i){
+  const h=S.history[i],e=h&&EXI[h.ex];if(!h||!e)return;
+  sheet(`<div class="h2">Correct logged set</div><p class="muted" style="margin:5px 0 16px">${e.n} · ${new Date(h.t).toLocaleDateString()}</p>
+   ${e.type==='w'?`<div class="field"><label>Weight</label><input id="ehw" type="number" inputmode="decimal" value="${h.w}"><span class="muted">lb</span></div>`:''}
+   <div class="field"><label>${e.type==='time'?'Seconds':'Reps'}</label><input id="ehr" type="number" inputmode="numeric" value="${h.r}"></div>
+   <p class="muted" style="font-size:12px;line-height:1.4;margin:10px 2px 14px">Saving recalculates this exercise and your overall rank from every logged set.</p>
+   <button class="btn" onclick="saveRankedSet(${i})">Save correction</button><button class="btn ghost" style="margin-top:10px;color:var(--bad)" onclick="removeRankedSet(${i})">Remove this set</button>`);
+}
+function saveRankedSet(i){
+  const h=S.history[i],e=h&&EXI[h.ex];if(!h||!e)return;
+  const w=e.type==='w'?(+$('#ehw').value||0):0,r=+$('#ehr').value||0;
+  if(!r||(e.type==='w'&&!w&&e.eq!=='wb')){toast('Enter a valid weight and reps');return}
+  h.w=w;h.r=r;rebuildRanks();save();closeSheet();exSheet(e.id);toast('Set corrected · ranks recalculated');
+}
+function removeRankedSet(i){
+  const h=S.history[i],e=h&&EXI[h.ex];if(!h||!e)return;
+  if(!confirm(`Remove this ${e.n} set? Your ranks will recalculate.`))return;
+  S.history.splice(i,1);rebuildRanks();save();closeSheet();exSheet(e.id);toast('Set removed · ranks recalculated');
+}
 
 /* ================= RANKS ================= */
 const PW={tech:['Technique God','technique','#62d2ff'],dragon:['Dragon God','dragon','#38dcbc'],fight:['Fighting God','fighting','#f5c22f'],demon:['Demon God','demon','#ff3d55'],death:['Death God','death','#b28cff'],sword:['Sword God','sword','#c3cbd8'],north:['North God','north','#e8892f'],quag:['Quagmire','pendant','#59b9f9']};
@@ -671,6 +690,19 @@ function applySet(e,w,reps,t){
   const nr=rankFor(Math.max(r,old?.rating||0)),up=!old||(isPR&&(nr.rank.tier>prevRf.rank.tier||nr.div!==prevRf.div));
   if(up)(S.rankups||=[]).push({t,ex:e.id,tier:nr.rank.tier,div:nr.div});
   return {r,up,isPR,nr,first:!old};
+}
+// History is the source of truth for rankings. Rebuild after correcting or removing a logged set.
+function rebuildRanks(){
+  S.lifts={};S.prs=0;S.rankups=[];
+  for(const h of [...S.history].sort((a,b)=>a.t-b.t)){
+    const e=EXI[h.ex];if(!e)continue;
+    h.w=+h.w||0;h.r=+h.r||0;h.rating=rateX(e,h.w,h.r);
+    const old=S.lifts[e.id],prevRf=old?rankFor(old.rating):null,isPR=!!old&&h.rating>old.rating;
+    if(!old||h.rating>old.rating)S.lifts[e.id]={rating:h.rating,w:h.w,r:h.r,t:h.t};
+    if(isPR)S.prs++;
+    const nr=rankFor(Math.max(h.rating,old?.rating||0));
+    if(!old||(isPR&&(nr.rank.tier>prevRf.rank.tier||nr.div!==prevRf.div)))S.rankups.push({t:h.t,ex:e.id,tier:nr.rank.tier,div:nr.div});
+  }
 }
 const fx=(rank,size)=>GodFX.html(rank,size);
 const PLACE=10;
