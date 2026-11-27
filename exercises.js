@@ -354,6 +354,9 @@ Hanging Knee Raise|bw|abs|core|x1.6
 Toes-to-Bar|bw|abs|core,back|x.7
 Captain's Chair Leg Raise|bw|abs|core|x1.3
 Cable Crunch|cb|crunch|core|*
+Lat Pulldown Dema Crunch|cb|crunch|core|x.8
+Cable Rotation|cb|rotation|core|*
+Smith Machine Lateral Flexion|sm|latflex|core|*
 Crunch|bw|crunch|core|x3
 Sit-Up|bw|crunch|core|x2.5
 Weighted Sit-Up|wb|crunch|core
@@ -387,7 +390,7 @@ const BASE={hpress:1.5,vpress:1.0,fly:.55,pullover:.6,row:1.3,vpull:1.25,hinge:2
   curl:.75,triext:.65,wrist:.6,squat:2.0,legpress:4.2,lunge:1.25,legext:1.2,legcurl:.95,hipthrust:2.8,abduct:1.6,calf:2.6,crunch:1.0,antirot:.6,dip:1.6,pushup:1.6};
 const EQF={bb:1,sm:1.05,mc:1.12,cb:.8,db:.42,kb:.38,ez:.95,tb:1.08,lm:.62,pl:.35,bd:1,wb:1};
 // reps standards for bodyweight moves (reps that equal God I), seconds for holds
-const REPS={pushup:75,dip:45,vpull:28,row:40,squat:100,lunge:40,legext:30,legcurl:12,hipthrust:40,calf:80,crunch:60,abs:30,ext:40,cardio:500,grip:100,antirot:30,vpress:30,hold:180,hang:150};
+const REPS={pushup:75,dip:45,vpull:28,row:40,squat:100,lunge:40,legext:30,legcurl:12,hipthrust:40,calf:80,crunch:60,abs:30,ext:40,cardio:500,grip:100,antirot:30,rotation:30,latflex:30,vpress:30,hold:180,hang:150};
 const COMPOUND=new Set(['hpress','vpress','row','vpull','hinge','squat','legpress','lunge','dip','pushup','hipthrust','carry','swing']);
 const lines=[];
 for(const [group,txt] of Object.entries(RAW))for(const line of txt.split('\n')){
@@ -447,6 +450,8 @@ const HOW={
  abduct:['Brace your core and stay tall.','Push your legs outward against the resistance.','Return slowly.'],
  calf:['Stand on the balls of your feet with heels free.','Rise up as high as you can and pause.','Lower to a deep stretch.'],
  crunch:['Brace your core and tuck your chin slightly.','Curl your ribs toward your hips.','Lower under control without pulling on your neck.'],
+ rotation:['Set the cable at chest height and stand side-on with your feet planted.','Rotate your ribs and shoulders through the range without turning your hips.','Return slowly and repeat evenly on both sides.'],
+ latflex:['Set the Smith bar just below your fully extended hand and set the safety stops.','Stand sideways, hold the bar, and lower your ribs toward the floor with control.','Pull your torso back to upright, then repeat evenly on both sides.'],
  abs:['Brace your core and keep your lower back controlled.','Move through the full range slowly.','Breathe out on the hard part.'],
  antirot:['Stand side-on to the anchor with your core braced.','Move the handle without letting your torso twist.','Control the return.'],
  dip:['Support yourself with arms straight and shoulders down.','Lower until your elbows reach about 90°.','Press back up to straight arms.'],
